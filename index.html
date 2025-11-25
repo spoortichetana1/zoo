@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fantasy Zoo Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <!-- Top bar: coins and title -->
+        <header class="top-bar">
+            <h1>🐾 Fantasy Zoo</h1>
+            <div class="top-right">
+                <div class="coins-display">
+                    Coins: <span id="coin-count">0</span>
+                </div>
+                <div class="income-display">
+                    Zoo income: <span id="income-rate">0</span> /s
+                </div>
+            </div>
+        </header>
+
+        <!-- Egg shop -->
+        <section class="panel">
+            <h2>🥚 Egg Shop</h2>
+            <p>Buy eggs and wait for them to hatch into magical creatures!</p>
+            <div class="egg-shop">
+                <button class="egg-button" data-type="common">
+                    Common Egg<br>
+                    <span class="price">💰 20</span>
+                </button>
+                <button class="egg-button" data-type="rare">
+                    Rare Egg<br>
+                    <span class="price">💰 40</span>
+                </button>
+                <button class="egg-button" data-type="mystic">
+                    Mystic Egg<br>
+                    <span class="price">💰 80</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Incubator area -->
+        <section class="panel">
+            <h2>⏳ Incubator</h2>
+            <p>Your eggs are hatching… watch the timers!</p>
+            <div id="incubator" class="card-grid">
+                <!-- Eggs will be shown here -->
+            </div>
+        </section>
+
+        <!-- Zoo area -->
+        <section class="panel">
+            <h2>🦄 Your Zoo</h2>
+            <p>All the creatures you have collected so far. Each one earns coins for you!</p>
+            <div id="zoo" class="card-grid">
+                <!-- Animals will be shown here -->
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
