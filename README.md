@@ -42,4 +42,4 @@ All hatched animals appear here — and each one generates **coins per second**.
 ---
 
 ## 📁 Project Structure
-
+ 
