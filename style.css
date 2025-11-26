@@ -94,10 +94,10 @@ body {
     font-weight: bold;
 }
 
-/* Grid for incubator and zoo cards */
+/* Grid for incubator, zoo, bath queue cards */
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 12px;
     margin-top: 8px;
 }
@@ -118,7 +118,7 @@ body {
     margin-bottom: 4px;
 }
 
-/* Egg timer bar */
+/* Generic bar */
 .progress-bar {
     margin-top: 6px;
     width: 100%;
@@ -149,5 +149,94 @@ body {
 .income-text {
     margin-top: 4px;
     font-size: 0.75rem;
+    color: #555;
+}
+
+/* Hunger + Clean labels */
+.hunger-label,
+.clean-label {
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: #555;
+}
+
+.hunger-bar .progress-inner {
+    background: #ff9595;
+}
+
+.clean-bar .progress-inner {
+    background: #8fd6ff;
+}
+
+/* Buttons inside animal cards */
+.button-row {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.card-button {
+    border: none;
+    border-radius: 999px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    background: #f0f0ff;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.card-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.card-button.feed {
+    background: #c9f7c4;
+}
+
+.card-button.clean {
+    background: #c4e7ff;
+}
+
+.card-button.sell {
+    background: #ffe0c4;
+}
+
+.card-button.disabled {
+    opacity: 0.5;
+    cursor: default;
+    box-shadow: none;
+}
+
+/* Bath house items */
+.bath-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.bath-card {
+    background: #fff6ff;
+    border-radius: 10px;
+    padding: 8px 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.bath-icon {
+    font-size: 1.6rem;
+}
+
+.bath-title {
+    font-weight: bold;
+    margin-top: 4px;
+}
+
+.bath-text {
+    font-size: 0.8rem;
+    margin-top: 4px;
     color: #555;
 }
