@@ -41,5 +41,73 @@ All hatched animals appear here — and each one generates **coins per second**.
 
 ---
 
-## 📁 Project Structure
+### 📁 Project Structure
  
+fantasy-zoo/
+│
+├── index.html     # Main game UI
+├── style.css      # Game styling
+└── script.js      # Game logic (hatching, income, rendering)
+
+### 🚀 How to Run
+
+Download or clone the repository
+
+Open the folder in VS Code
+
+Double-click index.html
+
+Game opens instantly in your browser 🎉
+
+Or use VS Code’s Live Server for auto-refresh
+
+### 🎨 Customize the Game
+
+Want to expand it?
+You can easily modify:
+
+Egg prices
+
+Hatch times
+
+Animal lists
+
+Income per creature
+
+Add new egg types
+
+Add upgrades or zoo expansion
+
+Everything is inside script.js.
+
+### 🔧 Technologies Used
+
+HTML
+
+CSS
+
+JavaScript
+
+No frameworks needed
+
+### 🧒 Made For Learning
+
+This game is built to be easy to understand for beginner programmers — perfect for experimenting, adding new features, and learning how to structure a game.
+
+### ✨ Future Ideas (Optional)
+
+🎯 Missions (“Hatch 5 Mystic pets”)
+
+🏰 Habitats (forest, sky, ocean)
+
+⭐ Legendary eggs
+
+👑 Animal leveling
+
+💬 Pet dialogue bubbles
+
+📱 Mobile layout
+
+❤️ Credits
+
+Made by Spoorti, age 11 — building cool games and learning coding one project at a time! 🚀
