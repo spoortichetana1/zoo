@@ -1,107 +1,145 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Fantasy Zoo Game</title>
-    <link rel="stylesheet" href="style.css">
+    <!--
+        Fantasy Zoo - index.html
+        This file defines the page structure and loads all CSS + JS files.
+        All game logic lives in the JS files under /js and /js/systems.
+    -->
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fantasy Zoo 🐾</title>
+
+    <!-- Main stylesheet for layout, colors, and components -->
+    <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
     <div class="game-container">
-        <!-- Top bar: coins and title -->
+        <!-- ================= TOP BAR ================= -->
         <header class="top-bar">
-            <h1>🐾 Fantasy Zoo</h1>
-            <div class="top-right">
-                <div class="coins-display">
-                    Coins: <span id="coin-count">0</span>
+            <h1 class="game-title">🐾 Fantasy Zoo</h1>
+            <div class="top-stats">
+                <div class="stat">
+                    Coins:
+                    <span id="coin-count">0</span>
                 </div>
-                <div class="income-display">
-                    Zoo income: <span id="income-rate">0</span> /s
+                <div class="stat">
+                    Income:
+                    <span id="income-rate">0</span>/s
                 </div>
             </div>
         </header>
 
-        <!-- Egg shop -->
-        <section class="panel">
+        <!-- ================= EGG SHOP ================= -->
+        <section class="panel" id="panel-egg-shop">
             <h2>🥚 Egg Shop</h2>
-            <p>Buy eggs and wait for them to hatch into magical creatures!</p>
-            <div class="egg-shop">
-                <button class="egg-button" data-type="common">
-                    Common Egg<br>
-                    <span class="price">💰 20</span>
-                </button>
-                <button class="egg-button" data-type="rare">
-                    Rare Egg<br>
-                    <span class="price">💰 40</span>
-                </button>
-                <button class="egg-button" data-type="mystic">
-                    Mystic Egg<br>
-                    <span class="price">💰 80</span>
-                </button>
+            <p class="panel-description">
+                Spend coins to buy eggs. Different egg types hatch into different kinds of magical animals.
+            </p>
+
+            <!-- Buttons for each egg type will be rendered into this container by JS -->
+            <div id="egg-shop" class="egg-shop-container">
+                <!-- Example (will be replaced by JS):
+                <button class="egg-button" data-type="common">Common Egg – 20 💰</button>
+                -->
             </div>
         </section>
 
-        <!-- Incubator area -->
-        <section class="panel">
+        <!-- ================= INCUBATOR ================= -->
+        <section class="panel" id="panel-incubator">
             <h2>⏳ Incubator</h2>
-            <p>Your eggs are hatching… watch the timers!</p>
+            <p class="panel-description">
+                Your eggs are incubating here. Watch the timers and wait for them to hatch into new pets.
+            </p>
+
+            <!-- Egg cards (with timers and progress bars) will be rendered here -->
             <div id="incubator" class="card-grid">
-                <!-- Eggs will be shown here -->
+                <!-- JS will populate egg cards -->
             </div>
         </section>
 
-        <!-- Zoo area -->
-        <section class="panel">
+        <!-- ================= ZOO (PETS) ================= -->
+        <section class="panel" id="panel-zoo">
             <h2>🦄 Your Zoo</h2>
-            <p>
-                All the creatures you have collected so far.<br>
-                <strong>Important:</strong> Animals must be fed and bathed to keep earning coins. You can also sell them for coins.
+            <p class="panel-description">
+                All your animals live here. Keep them fed and clean so they keep earning coins for your zoo.
             </p>
+
+            <!-- Animal cards (with hunger, cleanliness, buttons) will be rendered here -->
             <div id="zoo" class="card-grid">
-                <!-- Animals will be shown here -->
+                <!-- JS will populate animal cards -->
             </div>
         </section>
 
-        <!-- Bath House -->
-        <section class="panel">
-            <h2>🛁 Pet Bath House</h2>
-            <p>
-                Pets get dirty over time. When they say “Dirty! Needs a bath 🛁”, click <strong>Clean</strong> on them.<br>
-                The bath house uses different soaps, shampoos, towels and a hairdryer to make them shiny again.
+        <!-- ================= BATH HOUSE ================= -->
+        <section class="panel" id="panel-bath-house">
+            <h2>🛁 Bath House</h2>
+            <p class="panel-description">
+                Pets go here when you send them for a bath. Only one pet is cleaned at a time, others wait in a queue.
             </p>
 
-            <div class="bath-items">
-                <div class="bath-card">
-                    <div class="bath-icon">🧼</div>
-                    <div class="bath-title">Soft Bubble Soap</div>
-                    <div class="bath-text">Cleans dust and mud from your pets.</div>
-                </div>
-                <div class="bath-card">
-                    <div class="bath-icon">🧴</div>
-                    <div class="bath-title">Magic Shine Shampoo</div>
-                    <div class="bath-text">Makes fur and scales sparkle.</div>
-                </div>
-                <div class="bath-card">
-                    <div class="bath-icon">🛁</div>
-                    <div class="bath-title">Fluffy Towels</div>
-                    <div class="bath-text">Dries them off and keeps them warm.</div>
-                </div>
-                <div class="bath-card">
-                    <div class="bath-icon">💨</div>
-                    <div class="bath-title">Warm Hairdryer</div>
-                    <div class="bath-text">Final touch so they feel comfy and happy.</div>
-                </div>
-            </div>
-
-            <h3 style="margin-top: 14px;">🧼 Bath Queue</h3>
-            <p style="font-size: 0.85rem; margin-top: 4px;">
-                Pets enter the bath one by one. The first pet is getting washed, the others are waiting in line.
-            </p>
+            <!-- Bath queue: current pet in bath + waiting pets -->
             <div id="bath-queue" class="card-grid">
-                <!-- Pets in bath / queue will be shown here -->
+                <!-- JS will render the current bath pet and queue order -->
             </div>
         </section>
+
+        <!-- ================= LEADERBOARD ================= -->
+        <section class="panel" id="panel-leaderboard">
+            <h2>🏆 Leaderboard</h2>
+            <p class="panel-description">
+                See your best zoo runs here. Scores are stored locally on this device.
+            </p>
+
+            <!-- Leaderboard entries will be rendered as rows/cards here -->
+            <div id="leaderboard" class="leaderboard-container">
+                <!-- JS will populate leaderboard entries -->
+            </div>
+        </section>
+
+        <!-- ================= FOOTER ================= -->
+        <footer class="footer">
+            <p>
+                Fantasy Zoo &copy; 
+                <span id="footer-year">
+                    <!-- JS can optionally fill the current year here -->
+                </span>
+            </p>
+        </footer>
     </div>
 
-    <script src="script.js"></script>
+    <!-- ================= SCRIPT LOADING ORDER =================
+         The order matters:
+         1. state + utils
+         2. data definitions (eggs, animals)
+         3. systems (game logic)
+         4. render + UI + main loop
+    =========================================================== -->
+
+    <!-- 1) Core state and utilities -->
+    <script src="js/state.js"></script>
+    <script src="js/utils.js"></script>
+
+    <!-- 2) Data definitions -->
+    <script src="js/eggs.js"></script>
+    <script src="js/animals.js"></script>
+
+    <!-- 3) Game systems (logic modules) -->
+    <script src="js/systems/hatching.js"></script>
+    <script src="js/systems/feeding.js"></script>
+    <script src="js/systems/cleaning.js"></script>
+    <script src="js/systems/economy.js"></script>
+    <script src="js/systems/happiness.js"></script>
+    <script src="js/systems/events.js"></script>
+    <script src="js/systems/habitat.js"></script>
+    <script src="js/systems/disease.js"></script>
+    <script src="js/systems/prestige.js"></script>
+
+    <!-- 4) Rendering, leaderboard, UI bindings, and main loop -->
+    <script src="js/render.js"></script>
+    <script src="js/leaderboard.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>

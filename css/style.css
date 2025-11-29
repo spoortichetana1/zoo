@@ -1,0 +1,483 @@
+/* 
+    ========================================================================
+    FANTASY ZOO - MAIN STYLESHEET (css/style.css)
+    ========================================================================
+    This file controls ALL visual styling of the game:
+    - Page layout (background, container, spacing)
+    - Top bar / header area
+    - Panels (Egg shop, Incubator, Zoo, Bath House, Leaderboard)
+    - Cards (for eggs, animals, queue items, leaderboard entries)
+    - Buttons (egg buttons, action buttons)
+    - Progress bars (for hunger, cleanliness, timers)
+    - Responsive behavior (how it looks on smaller screens)
+
+    IMPORTANT:
+    - This file does NOT contain any game logic.
+    - If something "looks wrong" (misaligned, overlapping, etc.), the fix is
+      almost always here.
+    - If something "does nothing when clicked", that is a JavaScript issue,
+      NOT a CSS issue.
+
+    TIP:
+    - When debugging visual problems, use browser DevTools (F12) and inspect
+      elements to see which CSS rules are applied.
+*/
+
+
+/* 
+    =========================
+    GLOBAL PAGE STYLING
+    =========================
+*/
+
+* {
+    /* 
+       Reset default browser margins / paddings.
+       This ensures consistent layout across Chrome, Edge, Firefox, etc.
+    */
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box; /* Width/height include padding + border */
+}
+
+html, body {
+    height: 100%; /* Allows the background gradient to fill the entire viewport */
+}
+
+body {
+    /* Soft gradient background to make the game feel playful */
+    background: linear-gradient(135deg, #fff7e6, #ffe6fa);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #333;
+    /* Smooth text rendering on most browsers */
+    -webkit-font-smoothing: antialiased;
+}
+
+/* 
+    =========================
+    MAIN GAME CONTAINER
+    =========================
+*/
+
+.game-container {
+    /* Center the game layout in the middle of the page */
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 16px;
+}
+
+/* 
+    =========================
+    TOP BAR (HEADER)
+    =========================
+*/
+
+.top-bar {
+    /* Layout: horizontal row with title on left and stats on right */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    background: #ffe3a3;       /* Warm orange-yellow background */
+    border-radius: 12px;       /* Smooth rounded corners */
+    padding: 12px 16px;
+    margin-bottom: 16px;
+
+    /* Light drop shadow for "card" effect */
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* Game title text ("Fantasy Zoo") */
+.game-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px; /* Space between emoji and text, if any */
+}
+
+/* Container for the two small stats on the right (coins + income) */
+.top-stats {
+    display: flex;
+    flex-direction: column; /* Stack them vertically */
+    align-items: flex-end;  /* Right-align text */
+    gap: 2px;
+}
+
+/* Individual stat line (e.g. "Coins: 100") */
+.stat {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+/* 
+    =========================
+    PANELS (SECTIONS)
+    =========================
+*/
+
+.panel {
+    background: #ffffff;           /* White background for strong contrast */
+    border-radius: 12px;
+    padding: 12px 16px 16px 16px;
+    margin-bottom: 16px;
+
+    /* Soft shadow to make panels stand out from background */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* Section heading (e.g. "Egg Shop", "Incubator") */
+.panel h2 {
+    font-size: 1.2rem;
+    margin-bottom: 6px;
+}
+
+/* Short explanation text under each section title */
+.panel-description {
+    font-size: 0.9rem;
+    color: #555; /* Slightly dimmer than body text */
+    margin-bottom: 8px;
+}
+
+/* 
+    =========================
+    EGG SHOP
+    =========================
+*/
+
+/*
+    This container holds the "egg buttons" (Common / Rare / Mystic).
+    JS will populate it with <button> elements.
+*/
+.egg-shop-container {
+    display: flex;
+    flex-wrap: wrap;       /* Allow buttons to wrap on smaller screens */
+    gap: 10px;             /* Space between buttons */
+}
+
+/*
+    Generic style for egg purchase buttons.
+    If you feel the button size is off, you can adjust padding, min-width, etc.
+*/
+.egg-button {
+    flex: 1;                      /* Allow buttons to grow and share space */
+    min-width: 130px;             /* Minimum width so text doesn't wrap too early */
+    border: none;
+    border-radius: 10px;
+    padding: 10px;
+
+    background: #f6f0ff;          /* Soft purple/lavender background */
+    color: #333;
+    font-size: 0.95rem;
+    font-weight: 600;
+
+    cursor: pointer;              /* Pointer cursor on hover */
+    text-align: center;
+
+    /* Slight shadow: makes button look clickable */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+
+    /* Smooth hover animations */
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+}
+
+/* Hover state: lifts the button slightly */
+.egg-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.18);
+    background: #efe2ff;
+}
+
+/* Active (pressed) state: push back down */
+.egg-button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+/* 
+    =========================
+    GRID LAYOUTS (Incubator, Zoo, Bath Queue)
+    =========================
+*/
+
+/*
+    .card-grid is used by:
+    - #incubator (for eggs)
+    - #zoo (for animals)
+    - #bath-queue (for bath house)
+    It sets up a responsive grid layout that automatically adjusts
+    the number of columns based on screen width.
+*/
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;                 /* Horizontal & vertical gap between cards */
+    margin-top: 8px;
+}
+
+/* 
+    =========================
+    GENERIC CARD STYLING
+    =========================
+*/
+
+/*
+    A "card" is used for many things:
+    - Animal card
+    - Egg card
+    - Bath queue card
+    - Leaderboard item card
+    If a visual issue affects all of these, you probably need to edit .card.
+*/
+.card {
+    background: #fffdf5;       /* Slightly warm off-white */
+    border-radius: 10px;
+    padding: 8px 10px 10px 10px;
+    text-align: center;
+
+    /* Thin shadow for depth */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+    font-size: 0.9rem;
+}
+
+/*
+    Used for the big emoji at the top of the card (pet or egg icon).
+    If the emoji is too big or small, change font-size here.
+*/
+.card .icon {
+    font-size: 2rem;
+    margin-bottom: 4px;
+}
+
+/*
+    Small pill-shaped label (used for rarity tags like "Common", "Rare", etc.)
+*/
+.tag {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 2px 6px;
+    border-radius: 999px;      /* Fully rounded (pill shape) */
+    font-size: 0.7rem;
+    background: #ffe9c7;       /* Soft orange background */
+    color: #333;
+}
+
+/*
+    Used to display coin income text like "💰 3 coins/sec".
+*/
+.income-text {
+    margin-top: 4px;
+    font-size: 0.8rem;
+    color: #555;
+}
+
+/*
+    Used for short labels inside cards, like:
+    - Hunger: 80%
+    - Cleanliness: 60%
+*/
+.hunger-label,
+.clean-label {
+    margin-top: 6px;
+    font-size: 0.78rem;
+    color: #555;
+}
+
+/* 
+    =========================
+    PROGRESS BARS
+    =========================
+    These are used for:
+    - Egg hatching progress (time left)
+    - Hunger bars
+    - Cleanliness bars
+    - Bath progress
+*/
+
+/*
+    Generic background "track" of a progress bar.
+    It's used as a container, with a child .progress-inner that shows the fill.
+*/
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    margin-top: 6px;
+    border-radius: 999px;       /* Fully rounded ends */
+    background: #eee2ff;        /* Light purple grey as track */
+    overflow: hidden;           /* Ensures the inner bar stays inside rounded corners */
+}
+
+/*
+    Generic filled portion of the progress bar.
+    The width of this element is set dynamically from JS (e.g., style="width: 40%;").
+*/
+.progress-inner {
+    height: 100%;
+    border-radius: 999px;
+    background: #c58fff;        /* Purple fill (default) */
+    width: 0%;                  /* Default width; JS will override inline */
+    transition: width 0.2s linear; /* Smooth animate when width changes */
+}
+
+/* 
+    Specific colors for hunger and cleanliness bars.
+    These override the default .progress-inner color.
+*/
+
+/* When the bar is inside an element with class .hunger-bar: */
+.hunger-bar .progress-inner {
+    background: #ff9999;        /* Red / salmon for hunger */
+}
+
+/* When the bar is inside an element with class .clean-bar: */
+.clean-bar .progress-inner {
+    background: #8fd6ff;        /* Light blue for cleanliness */
+}
+
+/* 
+    =========================
+    BUTTONS INSIDE CARDS
+    =========================
+    These are smaller than egg shop buttons and are used for:
+    - Feed
+    - Clean
+    - Sell
+*/
+
+/* Layout container for multiple small buttons under a card */
+.button-row {
+    display: flex;
+    flex-wrap: wrap;       /* Allow buttons to wrap on small widths */
+    justify-content: center;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+/*
+    Generic card button style.
+    If individual button types need special color, we apply extra classes.
+*/
+.card-button {
+    border: none;
+    border-radius: 999px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    cursor: pointer;
+
+    background: #f0f0ff;  /* Neutral light background */
+    color: #333;
+
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+
+    transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.1s ease;
+}
+
+/* Hover effect for active card buttons */
+.card-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Pressed effect */
+.card-button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+/* Specific color for Feed button */
+.card-button.feed {
+    background: #c9f7c4;  /* Soft green */
+}
+
+/* Specific color for Clean button */
+.card-button.clean {
+    background: #c4e7ff;  /* Soft blue */
+}
+
+/* Specific color for Sell button */
+.card-button.sell {
+    background: #ffe0c4;  /* Soft orange */
+}
+
+/* Disabled state (used in JS by adding .disabled class) */
+.card-button.disabled {
+    opacity: 0.5;
+    cursor: default;       /* Remove pointer so it feels "unclickable" */
+    box-shadow: none;
+    transform: none;
+}
+
+/* 
+    =========================
+    LEADERBOARD STYLING
+    =========================
+*/
+
+.leaderboard-container {
+    /* You can render leaderboard as flex rows or cards; for now it's just
+       a simple vertical stack with gaps.
+    */
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+/* Example style for an individual leaderboard entry card (if JS uses .card) */
+/* You can add a special class like .leaderboard-entry if needed later. */
+
+
+/* 
+    =========================
+    FOOTER
+    =========================
+*/
+
+.footer {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 12px;
+    padding-bottom: 8px;
+}
+
+/* 
+    =========================
+    RESPONSIVE DESIGN
+    =========================
+    These rules tweak the layout on smaller screens like tablets or phones.
+*/
+
+@media (max-width: 768px) {
+    /* For smaller screens, reduce padding for main container */
+    .game-container {
+        padding: 10px;
+    }
+
+    /* Stack title and stats vertically instead of side-by-side */
+    .top-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .top-stats {
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Slightly shrink the card grid items on very small devices */
+    .card-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+
+    .game-title {
+        font-size: 1.4rem;
+    }
+
+    .stat {
+        font-size: 0.85rem;
+    }
+}
