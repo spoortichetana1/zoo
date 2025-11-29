@@ -155,7 +155,7 @@ Tracks:
 
 The project is modular, allowing clean separation of logic, UI, and data.
 
-# 📦 Fantasy Zoo – Project Structure
+### 📦 Fantasy Zoo – Project Structure
 
 Below is the full project folder layout for **Fantasy Zoo**, formatted in clean and readable Markdown for your `README.md`.
 
