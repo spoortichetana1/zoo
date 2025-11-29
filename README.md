@@ -155,6 +155,11 @@ Tracks:
 
 The project is modular, allowing clean separation of logic, UI, and data.
 
+### 📦 Fantasy Zoo – Project Structure
+
+Below is the full project folder layout for **Fantasy Zoo**, formatted in clean and readable Markdown for your `README.md`.
+
+
 zoo/
 │
 ├── index.html
@@ -165,24 +170,24 @@ zoo/
 │
 ├── js/
 │ ├── main.js # Game loop, initialization
-│ ├── state.js # Global game state
-│ ├── utils.js # Helper functions
-│ ├── eggs.js # Egg definitions
-│ ├── animals.js # Animal pools per egg
-│ ├── render.js # Rendering all UI sections
-│ ├── leaderboard.js # Leaderboard tracking
-│ ├── ui.js # Button handlers, UI events
+│ ├── state.js # Global game state (coins, animals, eggs, etc.)
+│ ├── utils.js # Helper utilities (IDs, random choice, timers)
+│ ├── eggs.js # Egg types, prices, hatch times
+│ ├── animals.js # Animal pools for each egg type
+│ ├── render.js # Renders UI sections (zoo, incubator, bath house)
+│ ├── leaderboard.js # Leaderboard save/load logic
+│ ├── ui.js # Click handlers → calls system logic
 │ │
-│ ├── systems/ # All core game mechanics
-│ │ ├── hatching.js
-│ │ ├── feeding.js
-│ │ ├── cleaning.js
-│ │ ├── economy.js
-│ │ ├── happiness.js # planned
-│ │ ├── events.js # planned
-│ │ ├── habitat.js # planned
-│ │ ├── disease.js # planned
-│ │ └── prestige.js # planned
+│ ├── systems/ # Core game logic (modular architecture)
+│ │ ├── hatching.js # Egg timers → animals
+│ │ ├── feeding.js # Feeding costs + hunger restore
+│ │ ├── cleaning.js # Bath queue + cleaning cycle
+│ │ ├── economy.js # Income, buying, selling
+│ │ ├── happiness.js # (planned) happiness & mood effects
+│ │ ├── events.js # (planned) random events system
+│ │ ├── habitat.js # (planned) habitat bonuses
+│ │ ├── disease.js # (planned) sickness & recovery
+│ │ └── prestige.js # (planned) prestige resets + permanent upgrades
 │
 └── assets/
 └── (optional images/icons)
