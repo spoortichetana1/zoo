@@ -234,24 +234,5 @@ zoo/
 
 ---
 
-## 📎 Contributing
-
-- Keep each feature in its own JS file.
-- Follow the folder structure strictly.
-- All new mechanics must be written as independent “systems”.
-- Do not mix UI and logic.
-
----
-
-## 🏁 Final Notes
-
-Fantasy Zoo is designed to be **extendable, challenging, and fun**, while also teaching:
-
-- Modular architecture  
-- Game state management  
-- Rendering pipelines  
-- Idle-game balancing  
-- Clean code separation  
-
-You can continue evolving the game endlessly with new systems, expansions, and fun upgrades.
-
+## 📁 Project Structure
+ 
