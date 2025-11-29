@@ -1,0 +1,37 @@
+index.html – Defines the page structure and loads all CSS + JS files for the Fantasy Zoo game.
+
+css/style.css – Styles the layout, cards, buttons, bars, and overall visual theme of the game.
+
+js/state.js – Holds the global game state (coins, eggs, animals, bath queue, habitats, leaderboard, etc.) in one shared object.
+
+js/utils.js – Provides helper functions like random choice, time helpers, ID generation, and small reusable utilities.
+
+js/eggs.js – Defines all egg types (Common/Rare/Mystic) with their prices, hatch times, and display metadata.
+
+js/animals.js – Defines animal pools for each egg type, including name, emoji, rarity, and base income values.
+
+js/render.js – Renders all dynamic UI sections (incubator, zoo, bath house, leaderboard, top stats) from the current game state.
+
+js/ui.js – Wires up button clicks and user actions (buy egg, feed, clean, sell, etc.) to the appropriate game systems.
+
+js/systems/hatching.js – Manages egg timers and converts fully incubated eggs into animal instances added to the zoo.
+
+js/systems/feeding.js – Handles feeding logic, including coin cost checks and restoring an animal’s hunger to full.
+
+js/systems/cleaning.js – Manages the bath house queue, bath timing, and resetting an animal’s cleanliness after a completed bath.
+
+js/systems/economy.js – Calculates total income per second and updates coins based on all eligible animals each game tick.
+
+js/systems/happiness.js – Computes and updates each animal’s happiness and applies happiness-based income bonuses or penalties.
+
+js/systems/events.js – Triggers and resolves random events that temporarily affect coins, stats, or game conditions.
+
+js/systems/habitat.js – Manages habitats, assigns animals to suitable habitats, and applies habitat-based bonuses or penalties.
+
+js/systems/disease.js – Controls sickness logic, making neglected animals sick and managing their recovery via a virtual clinic system.
+
+js/systems/prestige.js – Handles prestige resets, tracking when the player can restart the zoo for permanent long-term upgrades.
+
+js/leaderboard.js – Saves, loads, and ranks player runs in a local leaderboard and formats data for display.
+
+js/main.js – Initializes the game, sets up the main loop, and orchestrates calling all systems and render functions each tick.
