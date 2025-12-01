@@ -42,24 +42,20 @@
         return document.getElementById(id);
     }
 
-    // Cache main interactive containers
-    const elEggShop = $("egg-shop");
-    const elZoo     = $("zoo");
+    // We don't cache these globally because they may be null during module
+    // execution in some load orders. Instead, we fetch them inside init().
 
     // =========================================================================
     // INITIALIZATION
     // =========================================================================
     /*
-        All event listeners are registered once DOM is ready.
-
-        NOTE:
-        - index.html loads this script at the bottom of <body>, so DOM should
-          already be ready, but using DOMContentLoaded is an extra safety.
+        All event listeners are registered once by calling UI.init().
+        main.js will call UI.init() once DOMContentLoaded is confirmed.
     */
-    document.addEventListener("DOMContentLoaded", function initUI() {
+    function init() {
         setupEggShopHandlers();
         setupZooHandlers();
-    });
+    }
 
     // =========================================================================
     // EGG SHOP HANDLERS
@@ -75,6 +71,7 @@
     */
 
     function setupEggShopHandlers() {
+        const elEggShop = $("egg-shop");
         if (!elEggShop) {
             console.warn("UI: #egg-shop element not found. Egg shop clicks won't work.");
             return;
@@ -138,6 +135,7 @@
     */
 
     function setupZooHandlers() {
+        const elZoo = $("zoo");
         if (!elZoo) {
             console.warn("UI: #zoo element not found. Zoo actions won't work.");
             return;
@@ -263,6 +261,7 @@
         Right now, it's not strictly necessary, but we provide it for flexibility.
     */
     window.UI = {
+        init,
         handleBuyEgg,
         handleFeedAnimal,
         handleCleanAnimal,

@@ -411,9 +411,14 @@
 
         elLeaderboard.innerHTML = "";
 
-        const runs = Array.isArray(GameState.leaderboard)
-            ? GameState.leaderboard
-            : [];
+        // Prefer Leaderboard.getRankedRuns() when available so runs are sorted
+        // and normalized consistently. Fall back to GameState.leaderboard.
+        let runs = [];
+        if (window.Leaderboard && typeof Leaderboard.getRankedRuns === "function") {
+            runs = Leaderboard.getRankedRuns();
+        } else if (Array.isArray(GameState.leaderboard)) {
+            runs = GameState.leaderboard;
+        }
 
         if (runs.length === 0) {
             const msg = document.createElement("p");
@@ -428,11 +433,11 @@
             const card = document.createElement("div");
             card.className = "card";
 
-            // Fallbacks in case some fields aren't present yet
+            // Use normalized fields where available
             const maxCoins      = run.maxCoins ?? run.coins ?? 0;
             const petsHatched   = run.petsHatched ?? 0;
             const highestRarity = run.highestRarity ?? "Unknown";
-            const prestiges     = run.prestiges ?? 0;
+            const prestiges     = run.prestigesAfter ?? run.prestigesBefore ?? run.prestiges ?? 0;
             const timePlayedMs  = run.timePlayed ?? 0;
 
             // Convert ms to seconds/minutes text for readability
