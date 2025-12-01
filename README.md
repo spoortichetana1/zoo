@@ -1,164 +1,274 @@
-# 🐾 Fantasy Zoo — Idle Pet Management Game  
-A modular, expandable browser game built using **HTML + CSS + JavaScript**.  
-Players hatch magical creatures, manage their needs, and build the most successful zoo possible.
+Here’s a clean spec you can treat as the final requirements for Fantasy Zoo.
 
-This README documents the **full game design**, **technical architecture**, and **planned features**, without exposing code.
+⸻
 
----
+1. Game Overview
+	•	Type: Idle / management browser game.
+	•	Goal: Build and manage a fantasy zoo of animals hatched from eggs, keep them happy and healthy, and grow income through habitats, events, and prestige.
+	•	Lose Conditions (Game Over):
+The player loses if any of these are true:
+	1.	No animals, no eggs, and can’t afford new egg
+	•	animals.length === 0
+	•	eggs.length === 0
+	•	coins < cheapestEggPrice
+	2.	Bankrupt – coins < 0
+	3.	All animals unhappy – every animal has happiness <= 0
 
-## 📌 Overview
+On Game Over, show a clear message and a Restart Game button.
 
-Fantasy Zoo is an idle/management game where players:
+⸻
 
-- Buy eggs  
-- Hatch fictional animals  
-- Maintain pets (hunger, cleanliness, happiness later)  
-- Run a bath house  
-- Earn coins per second  
-- Sell pets, upgrade systems, and compete on a leaderboard  
+2. Core Game Loop
 
-The game continuously evolves with new systems like disease, habitats, random events, and prestige.
+Each tick (e.g., every 1 second):
+	1.	Update egg hatching (turn ready eggs into animals).
+	2.	Update bath house (cleaning queue and current bath).
+	3.	Update disease/clinic (sick animals, treatment queue).
+	4.	Update habitats (bonuses/penalties, assignments).
+	5.	Update happiness (based on hunger, cleanliness, events, disease).
+	6.	Update events (random buffs/debuffs, durations).
+	7.	Update economy (coins, income per second, multipliers).
+	8.	Check lose conditions and set game-over flags if triggered.
+	9.	Re-render all UI panels.
 
-It is structured to scale, easy for kids to understand, and fully open to future upgrades.
+⸻
 
----
+3. Core Mechanics
 
-## 🎮 Gameplay Summary
+3.1 Eggs & Hatching
+	•	Player buys egg types: common, rare, mystic, etc.
+	•	Each egg has:
+	•	price
+	•	hatchTime (ms)
+	•	emoji, name, type (for display)
+	•	Eggs go into incubator and hatch after hatchTime.
+	•	When an egg hatches:
+	•	Select an animal from the corresponding animal pool.
+	•	Create an animal instance with defaults (see section 6.2).
 
-### ⭐ Core Loop
-1. Start with some coins.  
-2. Buy **Common**, **Rare**, or **Mystic** eggs.  
-3. Eggs incubate with visible countdowns.  
-4. Eggs hatch into random creatures from their rarity pool.  
-5. Animals generate **coins/sec** based on their rarity.  
-6. Player manages:  
-   - **Feeding** (mandatory, costs coins)  
-   - **Cleaning** (bath queue, costs coins)  
-   - **Selling pets**  
-7. Earn → Spend → Grow → Upgrade.
+3.2 Animals
 
-### ⭐ Pet Stats
-Each pet tracks:
+Each animal instance:
+	•	Identity: id, name, emoji, rarity, fromEggType
+	•	Economy: income (base income per sec), effectiveIncome
+	•	Care stats:
+	•	hunger (0–100)
+	•	cleanliness (0–100)
+	•	happiness (0–100)
+	•	healthStatus ("healthy" | "sick" etc.)
+	•	neglectTicks (count of bad-care ticks)
+	•	Habitat:
+	•	habitat (e.g., "forest" | "desert" | "ocean" | "arctic" | "mystic" | null)
+	•	habitatBonusMultiplier (e.g., 1.0+)
+	•	Happiness → income:
+	•	happinessIncomeMultiplier (e.g., 0.5–1.5)
+	•	Meta: createdAt timestamp
 
-| Stat          | Description |
-|---------------|-------------|
-| `hunger`      | Drops over time; no income if too low |
-| `cleanliness` | Drops over time; must use bath house |
-| `income`      | Income per second |
-| `rarity`      | Common → Legendary |
-| `happiness`   | Planned |
-| `health`      | Planned |
-| `habitat`     | Planned |
+3.3 Feeding
+	•	Player can feed animals:
+	•	Costs coins (per feed).
+	•	Increases hunger back toward 100.
+	•	Reduces neglectTicks.
+	•	Impacts happiness positively if hunger was low.
 
----
+3.4 Cleaning & Bath House
+	•	Animals get dirtier over time or via events.
+	•	Player can queue animals for a bath:
+	•	Animals are added to bathQueue.
+	•	currentBath holds the animal currently being cleaned, with start time + duration.
+	•	After bath completes:
+	•	cleanliness set high (e.g., 100).
+	•	neglectTicks reduced.
+	•	happiness improves.
 
-## 🧼 Bath House System
+3.5 Disease & Clinic
+	•	Poor care (low hunger/cleanliness, high neglect, bad events) can make animals sick.
+	•	Sick animals:
+	•	healthStatus = "sick"
+	•	Lower happiness and possibly income.
+	•	Player can send animals to clinic:
+	•	Adds animal to clinicQueue.
+	•	currentPatient is treated over a duration.
+	•	After treatment:
+	•	healthStatus = "healthy"
+	•	Some stats (happiness/neglect) improved.
+	•	Clinic treatment may cost coins.
 
-- Pets get dirty over time.  
-- Cleaning has a **coin cost**, based on pet rarity.  
-- Cleaning sends pets into a **bath queue (FIFO)**.  
-- Only one pet is washed at a time.  
-- Bathing shows progress bar & queue order.  
-- After bath: cleanliness resets to 100%.
+3.6 Habitats
+	•	Zoo has multiple habitats:
+	•	Example keys: forest, desert, ocean, arctic, mystic
+	•	Each habitat:
+	•	key, level, capacity, animalIds[]
+	•	Animals assigned to a suitable habitat:
+	•	Gain habitat bonus to income (habitatBonusMultiplier).
+	•	Overcrowding or wrong habitat can reduce happiness or bonus.
 
----
+3.7 Happiness
+	•	Happiness depends on:
+	•	Hunger
+	•	Cleanliness
+	•	HealthStatus
+	•	Habitat match / overcrowding
+	•	Active events (positive or negative)
+	•	Happiness changes per tick; affects:
+	•	happinessIncomeMultiplier
+	•	Lose condition if all animals have happiness <= 0.
 
-## 💰 Economy System
+3.8 Economy
+	•	Each tick, for every animal:
+	•	Compute income (see multipliers in 6.3).
+	•	Add to GameState.coins.
+	•	GameState.incomePerSecond holds the current total.
+	•	Costs:
+	•	Buying eggs
+	•	Feeding
+	•	Clinic treatment
+	•	Possibly other features/events
 
-- Every second, each eligible pet contributes coins.  
-- A pet earns only if:
-  - Hunger > 0  
-  - Cleanliness > 0  
-  - Not in bath  
-  - (Planned) Happiness above threshold  
-  - (Planned) Healthy  
+3.9 Events
+	•	Random events can occur:
+	•	Example: Double income for X seconds, disease outbreak, mood boost, etc.
+	•	Stored in:
+	•	events.activeEvents[] (current)
+	•	events.history[] (for display)
+	•	Can modify:
+	•	incomeBoostMultiplier
+	•	Happiness
+	•	Disease risk, etc.
 
-- Coins are spent on:
-  - Eggs  
-  - Feed  
-  - Cleaning  
-  - Future: habitats, vet clinic, upgrades  
+3.10 Prestige
+	•	Player can Prestige after reaching some thresholds (high coins/animals).
+	•	On Prestige:
+	•	Reset zoo for a new run.
+	•	Keep permanent bonuses:
+	•	prestige.count
+	•	prestige.totalPrestigePoints
+	•	modifiers.globalPrestigeMultiplier (income multiplier).
+	•	Optionally record run in leaderboard.
 
----
+3.11 Leaderboard
+	•	Stores finished runs (usually when Prestiging).
+	•	Uses localStorage.
+	•	Each entry stores:
+	•	Coins, pets hatched, highest rarity, time played, etc.
+	•	Renders top N runs with rank.
 
-## 🥚 Egg Types
+⸻
 
-| Egg | Cost | Hatch Time | Rarity Range |
-|-----|------|------------|---------------|
-| **Common Egg** | 20 coins | Medium | Common → Uncommon |
-| **Rare Egg** | 40 coins | Slow | Rare → Epic |
-| **Mystic Egg** | 80 coins | Slowest | Epic → Legendary |
+4. UI Layout / Panels
 
-Each egg has its own **animal pool**, containing ~15+ types.
+Panels (index.html + render.js):
+	1.	Top Bar (#top-bar)
+	•	Shows coins, income per second, animals count, eggs count, prestige count.
+	2.	Game Over (#game-over-section)
+	•	Empty normally.
+	•	When GameState.isGameOver === true:
+	•	Show reason-specific message:
+	•	bankrupt
+	•	no_animals
+	•	all_unhappy
+	•	Show Restart Game button.
+	3.	Egg Shop (#egg-shop-section)
+	•	Shows each egg type with:
+	•	Name, emoji, price, hatch time.
+	•	Buy buttons with data-action="buy-egg".
+	4.	Incubator (#incubator-section)
+	•	Shows eggs currently hatching.
+	•	Progress bars & time remaining.
+	5.	Your Zoo (#zoo-section)
+	•	Shows animal cards:
+	•	Emoji, name, rarity
+	•	Base income & effective income
+	•	Happiness (emoji + %)
+	•	Health status (badge)
+	•	Habitat name
+	•	Multipliers
+	•	Buttons:
+	•	Feed (data-action="feed")
+	•	Clean (data-action="clean")
+	•	Sell (data-action="sell")
+	•	Send to Clinic (data-action="send-to-clinic")
+	•	Habitat move buttons:
+	•	data-action="assign-habitat"
+	•	data-habitat-key="forest" | "desert" | "ocean" | "arctic" | "mystic"
+	6.	Bath House (#bath-house-section)
+	•	Shows current animal in bath (if any).
+	•	Progress bar for cleaning time.
+	•	Queue list of waiting animals.
+	7.	Clinic (#clinic-section)
+	•	Shows current patient with treatment progress.
+	•	Queue of animals waiting for clinic.
+	8.	Habitats (#habitat-section)
+	•	Shows card per habitat:
+	•	Name, level, capacity, current animals count.
+	9.	Events (#events-section)
+	•	Shows last few (e.g., 5) events from events.history.
+	10.	Leaderboard (#leaderboard-section)
+	•	Table of top runs (Rank, Coins, Pets, Best Rarity, Time).
+	11.	Prestige (#prestige-section)
+	•	Shows:
+	•	Total prestiges
+	•	Global income multiplier
+	•	Prestige button (data-action="prestige"), disabled if not allowed.
 
----
+⸻
 
-## 🔮 Planned Advanced Systems (Modular)
+5. Global Game State (GameState)
 
-These are designed but will be implemented in later stages:
+5.1 Top-Level Fields
+	•	coins: number
+	•	incomePerSecond: number
+	•	animals: AnimalInstance[]
+	•	eggs: EggInstance[]
+	•	bathQueue: string[] (animal IDs)
+	•	currentBath: { id, start, durationMs } | null
+	•	clinicQueue: string[]
+	•	currentPatient: { id, start, durationMs } | null
+	•	habitats: { [key: string]: { key, level, capacity, animalIds[] } }
+	•	events: { activeEvents: [], history: [], lastEventTime: number }
+	•	leaderboard: RunSummary[]
+	•	prestige: { count: number, totalPrestigePoints: number, lastPrestigeTime: number }
+	•	modifiers: { globalPrestigeMultiplier: number, incomeBoostMultiplier: number }
+	•	runStartTime: number | null
+	•	lastTick: number | null
+	•	isGameOver: boolean
+	•	gameOverReason: "bankrupt" | "no_animals" | "all_unhappy" | null
 
-### ⭐ Happiness System
-- Happiness affects income multiplier.
-- Drops if pet is hungry/dirty/unhappy.
-- Mini bonuses when happiness maxes out.
+5.2 Per-Animal Defaults (set in hatching system)
 
-### ⭐ Disease & Vet Clinic
-- Pets may get sick if neglected.
-- Sick pets produce no income.
-- Treatment costs coins + time.
+When an egg hatches, each new animal gets:
+	•	hunger = 100
+	•	cleanliness = 100
+	•	happiness = 70
+	•	healthStatus = "healthy"
+	•	neglectTicks = 0
+	•	habitat = null
+	•	habitatBonusMultiplier = 1
+	•	happinessIncomeMultiplier = 1
+	•	effectiveIncome = baseIncome
+	•	fromEggType = "common" | "rare" | "mystic"
 
-### ⭐ Habitat System
-- Each habitat (Forest, Arctic, Ocean, Desert, Mystic) benefits certain animals.
-- Wrong habitat → happiness and income penalties.
-- Upgrades give boosts (e.g., slower decay).
+⸻
 
-### ⭐ Random Events
-Examples:
-- Visitor donates coins.
-- Temporary egg sale.
-- Storm reduces pet happiness.
-- Rare bonus egg appears.
+6. Economy Formula
 
-### ⭐ Visitors & Star Rating
-- Zoo is periodically rated from 1–5 stars.
-- Higher rating = passive bonus income.
+For each animal each tick:
+	•	Let:
+	•	base = animal.income
+	•	happyMult = animal.happinessIncomeMultiplier
+	•	habitatMult = animal.habitatBonusMultiplier
+	•	prestigeMult = GameState.modifiers.globalPrestigeMultiplier
+	•	eventMult = GameState.modifiers.incomeBoostMultiplier
+	•	Effective income:
 
-### ⭐ Prestige System
-- Once you reach major milestones (e.g., 100,000 coins), restart the zoo.
-- Gain permanent bonuses like:
-  - Faster hatching  
-  - Higher rare pet chance  
-  - Auto-feeding systems  
+income = base * happyMult * habitatMult * prestigeMult * eventMult
 
----
 
-## 🏆 Leaderboard System
+	•	Sum all animal incomes → GameState.incomePerSecond and add to coins.
 
-### Local Leaderboard (Initial)
-Stored in browser localStorage:
+⸻
 
-Tracks:
-- Total coins earned  
-- Maximum coins held  
-- Total pets hatched  
-- Highest rarity obtained  
-- Prestige count  
-- Time played  
-
-### Global Leaderboard (Future)
-- Optional backend or Google Sheets API.
-- Allows sharing scores with friends.
-
----
-
-## 🧱 Architecture & Folder Structure
-
-The project is modular, allowing clean separation of logic, UI, and data.
-
-### 📦 Fantasy Zoo – Project Structure
-
-Below is the full project folder layout for **Fantasy Zoo**, formatted in clean and readable Markdown for your `README.md`.
-
+7. Files & Folder Structure
 
 zoo/
 │
@@ -166,78 +276,30 @@ zoo/
 ├── README.md
 │
 ├── css/
-│ └── style.css
+│   └── style.css
 │
 ├── js/
-│ ├── main.js # Game loop, initialization
-│ ├── state.js # Global game state (coins, animals, eggs, etc.)
-│ ├── utils.js # Helper utilities (IDs, random choice, timers)
-│ ├── eggs.js # Egg types, prices, hatch times
-│ ├── animals.js # Animal pools for each egg type
-│ ├── render.js # Renders UI sections (zoo, incubator, bath house)
-│ ├── leaderboard.js # Leaderboard save/load logic
-│ ├── ui.js # Click handlers → calls system logic
-│ │
-│ ├── systems/ # Core game logic (modular architecture)
-│ │ ├── hatching.js # Egg timers → animals
-│ │ ├── feeding.js # Feeding costs + hunger restore
-│ │ ├── cleaning.js # Bath queue + cleaning cycle
-│ │ ├── economy.js # Income, buying, selling
-│ │ ├── happiness.js # (planned) happiness & mood effects
-│ │ ├── events.js # (planned) random events system
-│ │ ├── habitat.js # (planned) habitat bonuses
-│ │ ├── disease.js # (planned) sickness & recovery
-│ │ └── prestige.js # (planned) prestige resets + permanent upgrades
+│   ├── state.js           # Global GameState
+│   ├── utils.js           # Helpers (random, id, time, etc.)
+│   ├── eggs.js            # Egg definitions
+│   ├── animals.js         # Animal pools per egg type
+│   ├── render.js          # All UI rendering
+│   ├── ui.js              # Event listeners + calling systems
+│   ├── leaderboard.js     # Leaderboard storage + ranking
+│   ├── main.js            # Main loop + orchestration
+│   │
+│   ├── systems/
+│   │   ├── hatching.js    # Eggs → animals
+│   │   ├── feeding.js     # Feed animals, cost logic
+│   │   ├── cleaning.js    # Bath queue, cleaning timers
+│   │   ├── economy.js     # Income per second, coin updates
+│   │   ├── happiness.js   # Happiness changes and multipliers
+│   │   ├── events.js      # Random events, buffs/debuffs
+│   │   ├── habitat.js     # Habitat assignment & bonuses
+│   │   ├── disease.js     # Sickness, clinic queue
+│   │   ├── prestige.js    # Prestige logic & resets
+│   │   └── lose.js        # Lose criteria & game-over flags
 │
 └── assets/
-└── (optional images/icons)
+    └── (optional images/icons)
 
-
----
-
-## 🧪 Technical Goals
-
-- Pure client-side app (no backend required).
-- Modular JS architecture for easy expansion.
-- Smooth mobile + desktop experience.
-- No frameworks needed — fully vanilla.
-- Easy GitHub Pages deployment.
-- Kid-friendly design but technically organized.
-
----
-
-## 🚀 Development Roadmap (High Level)
-
-### Phase 1 — Core Systems  
-✔ Eggs, hatching  
-✔ Income  
-✔ Feeding  
-✔ Cleaning + bath queue  
-✔ Selling  
-✔ Modular JS architecture  
-
-### Phase 2 — Depth Features  
-⚙ Happiness  
-⚙ Diseases & clinic  
-⚙ Habitats & bonuses  
-⚙ Random events  
-⚙ Visitors & zoo rating  
-
-### Phase 3 — Progression  
-⚙ Achievements  
-⚙ Upgrades  
-⚙ Prestige system  
-
-### Phase 4 — Leaderboards  
-⚙ Local leaderboard  
-⚙ Optional cloud leaderboard  
-
-### Phase 5 — Polish  
-⚙ Animations, sound effects  
-⚙ Improved UI/UX theme  
-⚙ Pets with personalities  
-
----
-
-## 📁 Project Structure
- 

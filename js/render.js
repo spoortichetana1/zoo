@@ -2,497 +2,452 @@
     ============================================================================
     FANTASY ZOO - RENDERING LAYER (js/render.js)
     ============================================================================
-    This file is responsible ONLY for updating the DOM (HTML on the page)
-    based on the current GameState.
-
-    VERY IMPORTANT DESIGN RULE:
-    ---------------------------
-    - This file MUST NOT contain game logic (no feeding, cleaning, coins math).
-    - It should ONLY:
-        * Read from GameState, EggData, etc.
-        * Create/remove/update DOM elements.
-    - All button click behavior is handled in js/ui.js.
-
-    If the game "logic" is correct but:
-        ✔ cards don't update
-        ✔ bars don't move
-        ✔ lists don't refresh
-    → the bug is very likely in this file.
-
-    The main entry point is Render.all(), which should be called every tick
-    (e.g., once per second) from js/main.js.
+    Updates the DOM based on GameState. No game logic lives here.
 */
 
-
-// Wrap everything in an IIFE and attach a single global object "Render"
 (function () {
     "use strict";
 
-    // =========================================================================
-    // HELPER: SAFELY GET DOM ELEMENT BY ID
-    // =========================================================================
     function $(id) {
         return document.getElementById(id);
     }
 
-    // Cache references to frequently used DOM elements.
-    // If any of these are null, check index.html for missing IDs.
-    const elCoinCount   = $("coin-count");
-    const elIncomeRate  = $("income-rate");
-    const elEggShop     = $("egg-shop");
-    const elIncubator   = $("incubator");
-    const elZoo         = $("zoo");
-    const elBathQueue   = $("bath-queue");
-    const elLeaderboard = $("leaderboard");
-    const elFooterYear  = $("footer-year");
+    const sections = {
+        topBar: $("top-bar"),
+        gameOver: $("game-over-section"),
+        eggShop: $("egg-shop-section"),
+        incubator: $("incubator-section"),
+        zoo: $("zoo-section"),
+        bathHouse: $("bath-house-section"),
+        clinic: $("clinic-section"),
+        habitat: $("habitat-section"),
+        events: $("events-section"),
+        leaderboard: $("leaderboard-section"),
+        prestige: $("prestige-section")
+    };
 
-    // Set footer year once (optional, not required for the game).
-    if (elFooterYear) {
-        elFooterYear.textContent = new Date().getFullYear().toString();
+    function formatNumber(num) {
+        const value = Number(num) || 0;
+        return value % 1 === 0 ? value.toString() : value.toFixed(1);
     }
 
-    // =========================================================================
-    // RENDER: TOP STATS (COINS + INCOME)
-    // =========================================================================
-    function renderTopStats() {
-        // If these elements don't exist, silently stop instead of crashing.
-        if (elCoinCount) {
-            elCoinCount.textContent = GameState.coins.toString();
-        }
+    function renderTopBar() {
+        if (!sections.topBar) return;
 
-        if (elIncomeRate) {
-            elIncomeRate.textContent = GameState.incomePerSecond.toString();
-        }
+        const coins = formatNumber(GameState.coins);
+        const income = formatNumber(GameState.incomePerSecond);
+        const animals = Array.isArray(GameState.animals) ? GameState.animals.length : 0;
+        const eggs = Array.isArray(GameState.eggs) ? GameState.eggs.length : 0;
+        const prestiges = GameState.prestige?.count ?? 0;
+
+        sections.topBar.className = "top-bar card";
+        sections.topBar.innerHTML = `
+            <div class="game-title">🦁 Fantasy Zoo</div>
+            <div class="top-stats">
+                <div class="stat">Coins: ${coins}</div>
+                <div class="stat">Income/sec: ${income}</div>
+                <div class="stat">Animals: ${animals} | Eggs: ${eggs}</div>
+                <div class="stat">Prestiges: ${prestiges}</div>
+            </div>
+        `;
     }
 
-    // =========================================================================
-    // RENDER: EGG SHOP
-    // =========================================================================
-    /*
-        The egg shop shows one button per egg type (Common / Rare / Mystic).
-        Button DOM is created here, but click behavior is handled in js/ui.js.
+    function renderGameOver() {
+        if (!sections.gameOver) return;
+        if (!GameState.isGameOver) {
+            sections.gameOver.style.display = "none";
+            sections.gameOver.innerHTML = "";
+            return;
+        }
 
-        Each button gets:
-            class="egg-button"
-            data-egg-type="<typeKey>"   (e.g. "common", "rare", "mystic")
-    */
+        const reason = GameState.gameOverReason;
+        let message = "Your zoo has ended.";
+        if (reason === "bankrupt") {
+            message = "Bankrupt – your coins dropped below zero.";
+        } else if (reason === "no_animals") {
+            message = "No animals or eggs, and you can't afford a new egg.";
+        } else if (reason === "all_unhappy") {
+            message = "All animals are unhappy (happiness at zero).";
+        }
+
+        sections.gameOver.style.display = "block";
+        sections.gameOver.innerHTML = `
+            <div class="game-over-card">
+                <h2>Game Over</h2>
+                <p>${message}</p>
+                <button class="egg-button" data-action="restart">Restart Game</button>
+            </div>
+        `;
+    }
+
     function renderEggShop() {
-        if (!elEggShop) return;
+        if (!sections.eggShop) return;
+        const eggs = window.EggData || {};
+        const keys = Object.keys(eggs);
 
-        // Clear any previous contents to avoid duplicate buttons.
-        elEggShop.innerHTML = "";
+        const container = document.createElement("div");
+        container.className = "egg-shop-container";
 
-        // EggData should be a global object defined in js/eggs.js
-        const eggKeys = Object.keys(window.EggData || {});
-        if (eggKeys.length === 0) {
-            elEggShop.textContent = "No egg types defined. Check EggData in js/eggs.js.";
-            return;
+        if (keys.length === 0) {
+            container.textContent = "No egg types defined. Check EggData in js/eggs.js.";
+        } else {
+            keys.forEach((key) => {
+                const egg = eggs[key];
+                const btn = document.createElement("button");
+                btn.className = "egg-button";
+                btn.setAttribute("data-action", "buy-egg");
+                btn.setAttribute("data-egg-type", key);
+                btn.innerHTML = `
+                    <div style="font-size:1.6rem; margin-bottom:4px;">${egg.icon}</div>
+                    <div style="font-weight:600;">${egg.name}</div>
+                    <div style="font-size:0.9rem;">Cost: ${egg.price} 💰</div>
+                    <div style="font-size:0.8rem;">Hatch: ${formatNumber(egg.hatchTime / 1000)}s</div>
+                    <div style="font-size:0.75rem; color:#555;">${egg.description || ""}</div>
+                `;
+                container.appendChild(btn);
+            });
         }
 
-        eggKeys.forEach((typeKey) => {
-            const eggDef = EggData[typeKey];
-
-            // Create <button> for each egg type
-            const btn = document.createElement("button");
-            btn.className = "egg-button";
-            // Data attribute used later in UI.js to know which egg was clicked
-            btn.setAttribute("data-egg-type", typeKey);
-
-            // Inner HTML: icon, name, price, and short description
-            btn.innerHTML = `
-                <div style="font-size:1.6rem; margin-bottom:4px;">${eggDef.icon}</div>
-                <div style="font-weight:600;">${eggDef.name}</div>
-                <div style="font-size:0.85rem; margin-top:2px;">Cost: ${eggDef.price} 💰</div>
-                <div style="font-size:0.7rem; margin-top:2px; color:#555;">${eggDef.description}</div>
-            `;
-
-            elEggShop.appendChild(btn);
-        });
+        sections.eggShop.className = "card";
+        sections.eggShop.innerHTML = `<h2>Egg Shop</h2>`;
+        sections.eggShop.appendChild(container);
     }
 
-    // =========================================================================
-    // RENDER: INCUBATOR (EGGS WITH TIMERS)
-    // =========================================================================
-    /*
-        Shows all eggs currently incubating.
-
-        For each egg in GameState.eggs, we show:
-            - Egg icon
-            - Name
-            - Time remaining (formatted)
-            - Progress bar (0–100%)
-    */
     function renderIncubator() {
-        if (!elIncubator) return;
+        if (!sections.incubator) return;
+        sections.incubator.className = "card";
+        sections.incubator.innerHTML = `<h2>Incubator</h2>`;
 
-        // Clear previous egg cards.
-        elIncubator.innerHTML = "";
-
-        // If no eggs, show a friendly message instead of an empty area.
         if (!GameState.eggs || GameState.eggs.length === 0) {
-            const emptyMessage = document.createElement("p");
-            emptyMessage.textContent = "No eggs incubating. Buy an egg to start hatching!";
-            elIncubator.appendChild(emptyMessage);
+            const p = document.createElement("p");
+            p.textContent = "No eggs incubating. Buy an egg to start hatching!";
+            sections.incubator.appendChild(p);
             return;
         }
 
+        const grid = document.createElement("div");
+        grid.className = "card-grid";
         const now = Utils.now();
 
         GameState.eggs.forEach((egg) => {
-            const eggDef = EggData[egg.type];
+            const def = EggData[egg.type];
+            if (!def) return;
 
-            // If eggDef is missing, it usually means the type string is wrong.
-            if (!eggDef) {
-                console.warn("Unknown egg type in GameState.eggs:", egg.type);
-                return;
-            }
-
-            // Calculate time passed and time remaining
             const elapsed = now - egg.start;
             const remaining = Math.max(0, egg.hatchTime - elapsed);
+            const progress = Utils.clamp(Utils.percent(elapsed, egg.hatchTime), 0, 100);
 
-            // Calculate progress percentage: 0 to 100
-            const progress = Utils.clamp(
-                Utils.percent(elapsed, egg.hatchTime),
-                0,
-                100
-            );
-
-            // Create card for this egg
             const card = document.createElement("div");
             card.className = "card";
-
             card.innerHTML = `
-                <div class="icon">${eggDef.icon}</div>
-                <div><strong>${eggDef.name}</strong></div>
-                <div style="margin-top:4px; font-size:0.8rem;">
-                    Hatching in: ${Utils.formatTime(remaining)}
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-inner" style="width:${progress}%;"></div>
-                </div>
+                <div class="icon">${def.icon}</div>
+                <div><strong>${def.name}</strong></div>
+                <div style="font-size:0.85rem;">Hatching in: ${Utils.formatTime(remaining)}</div>
+                <div class="progress-bar"><div class="progress-inner" style="width:${progress}%;"></div></div>
             `;
-
-            elIncubator.appendChild(card);
+            grid.appendChild(card);
         });
+
+        sections.incubator.appendChild(grid);
     }
 
-    // =========================================================================
-    // RENDER: ZOO (ANIMAL CARDS)
-    // =========================================================================
-    /*
-        For each animal in GameState.animals, we show:
-            - Emoji
-            - Name + rarity tag
-            - Income per second (with "stopped" if not earning)
-            - Hunger bar + label
-            - Cleanliness bar + label
-            - Action buttons:
-                * Feed (class="card-button feed")
-                * Clean (class="card-button clean")
-                * Sell (class="card-button sell")
-            Each button also has data-animal-id="<id>" for UI.js.
-
-        IMPORTANT:
-        ----------
-        This function does not attach event listeners; UI.js is responsible
-        for listening to clicks on these buttons.
-    */
     function renderZoo() {
-        if (!elZoo) return;
-
-        elZoo.innerHTML = "";
+        if (!sections.zoo) return;
+        sections.zoo.className = "card";
+        sections.zoo.innerHTML = `<h2>Your Zoo</h2>`;
 
         if (!GameState.animals || GameState.animals.length === 0) {
-            const emptyMessage = document.createElement("p");
-            emptyMessage.textContent = "Your zoo is empty. Hatch some eggs to get new animals!";
-            elZoo.appendChild(emptyMessage);
+            const p = document.createElement("p");
+            p.textContent = "Your zoo is empty. Hatch some eggs to get new animals!";
+            sections.zoo.appendChild(p);
             return;
         }
 
+        const grid = document.createElement("div");
+        grid.className = "card-grid";
+        const prestigeMult = Number(GameState.modifiers?.globalPrestigeMultiplier ?? 1) || 1;
+        const eventMult = Number(GameState.modifiers?.incomeBoostMultiplier ?? 1) || 1;
+
         GameState.animals.forEach((animal) => {
-            // Convert hunger/cleanliness (0–100) to percentages (0–100)
             const hungerPercent = Utils.clamp(animal.hunger || 0, 0, 100);
-            const cleanPercent  = Utils.clamp(animal.cleanliness || 0, 0, 100);
+            const cleanPercent = Utils.clamp(animal.cleanliness || 0, 0, 100);
+            const happiness = Math.round(Utils.clamp(animal.happiness || 0, 0, 100));
+            const health = animal.healthStatus || "healthy";
+            const happyMult = formatNumber(animal.happinessIncomeMultiplier || 1);
+            const habitatMult = formatNumber(animal.habitatBonusMultiplier || 1);
+            const effectiveIncome = Number(animal.effectiveIncome ?? animal.income) || 0;
 
-            const isStarving = hungerPercent <= 0;
-            const isDirty    = cleanPercent <= 20;
-
-            // TODO: when happiness/disease systems are added, add checks here.
-
-            // Condition for whether the animal currently earns income
-            const canEarn = !isStarving && cleanPercent > 0;
-
-            // Text for hunger label
-            let hungerLabelText;
-            if (isStarving) {
-                hungerLabelText = "Hungry! (no coins)";
-            } else {
-                hungerLabelText = `Hunger: ${hungerPercent}%`;
-            }
-
-            // Text for cleanliness label
-            let cleanLabelText;
-            if (cleanPercent <= 0) {
-                cleanLabelText = "Filthy! (no coins)";
-            } else if (isDirty) {
-                cleanLabelText = "Dirty! Needs a bath 🛁";
-            } else {
-                cleanLabelText = `Cleanliness: ${cleanPercent}%`;
-            }
-
-            // Income text
-            const incomeText = canEarn
-                ? `💰 ${animal.income} coins/sec`
-                : `💰 ${animal.income} coins/sec (stopped)`;
-
-            // Create the animal card
             const card = document.createElement("div");
             card.className = "card";
-
-            // Use template literal to build the inner HTML
             card.innerHTML = `
                 <div class="icon">${animal.emoji}</div>
                 <div><strong>${animal.name}</strong></div>
                 <div class="tag">${animal.rarity || "Unknown"}</div>
-
-                <div class="income-text">${incomeText}</div>
-
-                <!-- HUNGER BAR -->
-                <div class="hunger-label">${hungerLabelText}</div>
-                <div class="progress-bar hunger-bar">
-                    <div class="progress-inner" style="width:${hungerPercent}%;"></div>
+                <div class="income-text">Base: ${animal.income} | Effective: ${formatNumber(effectiveIncome)}</div>
+                <div class="income-text">Happiness: ${happiness}% ${happiness <= 0 ? "😞" : happiness >= 80 ? "😄" : "🙂"}</div>
+                <div class="income-text">Health: ${health}</div>
+                <div class="income-text">Habitat: ${animal.habitat || "Unassigned"}</div>
+                <div class="income-text">
+                    Multipliers → Happy x${happyMult}, Habitat x${habitatMult}, Prestige x${formatNumber(prestigeMult)}, Events x${formatNumber(eventMult)}
                 </div>
-
-                <!-- CLEANLINESS BAR -->
-                <div class="clean-label">${cleanLabelText}</div>
-                <div class="progress-bar clean-bar">
-                    <div class="progress-inner" style="width:${cleanPercent}%;"></div>
-                </div>
-
-                <!-- ACTION BUTTONS -->
+                <div class="hunger-label">Tummy Full: ${hungerPercent}%</div>
+                <div class="progress-bar hunger-bar"><div class="progress-inner" style="width:${hungerPercent}%;"></div></div>
+                <div class="clean-label">Cleanliness: ${cleanPercent}%</div>
+                <div class="progress-bar clean-bar"><div class="progress-inner" style="width:${cleanPercent}%;"></div></div>
                 <div class="button-row">
-                    <button 
-                        class="card-button feed"
-                        data-animal-id="${animal.id}"
-                    >
-                        🍎 Feed
-                    </button>
-                    <button 
-                        class="card-button clean"
-                        data-animal-id="${animal.id}"
-                    >
-                        🛁 Clean
-                    </button>
-                    <button 
-                        class="card-button sell"
-                        data-animal-id="${animal.id}"
-                    >
-                        💸 Sell
-                    </button>
+                    <button class="card-button feed" data-action="feed" data-animal-id="${animal.id}">🍎 Feed</button>
+                    <button class="card-button clean" data-action="clean" data-animal-id="${animal.id}">🛁 Clean</button>
+                    <button class="card-button sell" data-action="sell" data-animal-id="${animal.id}">💸 Sell</button>
+                    <button class="card-button" data-action="send-to-clinic" data-animal-id="${animal.id}">🏥 Clinic</button>
+                </div>
+                <div class="button-row">
+                    ${ (window.HabitatConfig || []).map(h => `
+                        <button class="card-button" data-action="assign-habitat" data-habitat-key="${h.key}" data-animal-id="${animal.id}">
+                            ${h.name.split(" ")[0]}
+                        </button>
+                    `).join("") }
                 </div>
             `;
-
-            elZoo.appendChild(card);
+            grid.appendChild(card);
         });
+
+        sections.zoo.appendChild(grid);
     }
 
-    // =========================================================================
-    // RENDER: BATH HOUSE (QUEUE + CURRENT BATH)
-    // =========================================================================
-    /*
-        Shows:
-            - Current pet in bath (with progress bar), if any.
-            - Pets waiting in queue in the order they will be cleaned.
-
-        Data sources:
-            - GameState.currentBath → { id, start, ... } OR null
-            - GameState.bathQueue → [animalId1, animalId2, ...]
-    */
     function renderBathHouse() {
-        if (!elBathQueue) return;
+        if (!sections.bathHouse) return;
+        sections.bathHouse.className = "card";
+        sections.bathHouse.innerHTML = `<h2>Bath House</h2>`;
 
-        elBathQueue.innerHTML = "";
+        const ids = [];
+        if (GameState.currentBath?.id) ids.push(GameState.currentBath.id);
+        if (Array.isArray(GameState.bathQueue)) ids.push(...GameState.bathQueue);
 
-        const idsToShow = [];
-
-        // First, the animal currently in the bath (if any)
-        if (GameState.currentBath && typeof GameState.currentBath.id !== "undefined") {
-            idsToShow.push(GameState.currentBath.id);
-        }
-
-        // Then all IDs in the waiting queue
-        if (Array.isArray(GameState.bathQueue)) {
-            idsToShow.push(...GameState.bathQueue);
-        }
-
-        // If nothing at all is in bath or queue
-        if (idsToShow.length === 0) {
-            const msg = document.createElement("p");
-            msg.innerHTML = `No pets in the bath house.<br>Send a dirty pet to the bath from the zoo.`;
-            elBathQueue.appendChild(msg);
+        if (ids.length === 0) {
+            const p = document.createElement("p");
+            p.textContent = "No pets in the bath house. Send a dirty pet to get cleaned.";
+            sections.bathHouse.appendChild(p);
             return;
         }
 
         const now = Utils.now();
+        const list = document.createElement("div");
+        list.className = "card-grid";
 
-        idsToShow.forEach((animalId, index) => {
-            const animal = GameState.animals.find((a) => a.id === animalId);
-            if (!animal) {
-                console.warn("Bath house references missing animal ID:", animalId);
-                return;
-            }
+        ids.forEach((id, idx) => {
+            const animal = GameState.animals.find((a) => a.id === id);
+            if (!animal) return;
 
-            // Determine if this is the one actually in the bath
-            const isCurrent =
-                GameState.currentBath &&
-                GameState.currentBath.id === animalId &&
-                index === 0; // Should be the first in list
-
-            let statusText = "";
+            const isCurrent = GameState.currentBath && GameState.currentBath.id === id && idx === 0;
             let progressPercent = 0;
-
             if (isCurrent) {
-                statusText = "Getting cleaned ✨";
-
-                // If bathTime is not known here, the CleaningSystem will need to
-                // expose a constant. For now, we assume it sets durationMs on currentBath.
-                const durationMs = GameState.currentBath.durationMs || 1; // Avoid division by 0
+                const duration = GameState.currentBath.durationMs || 1;
                 const elapsed = now - GameState.currentBath.start;
-                progressPercent = Utils.clamp(
-                    Utils.percent(elapsed, durationMs),
-                    0,
-                    100
-                );
-            } else {
-                // Waiting in queue
-                statusText = `Waiting #${index + 1}`;
+                progressPercent = Utils.clamp(Utils.percent(elapsed, duration), 0, 100);
             }
 
             const card = document.createElement("div");
             card.className = "card";
-
             card.innerHTML = `
                 <div class="icon">${animal.emoji}</div>
                 <div><strong>${animal.name}</strong></div>
                 <div class="tag">${animal.rarity || "Unknown"}</div>
-                <div style="margin-top:4px; font-size:0.8rem;">${statusText}</div>
-                ${
-                    isCurrent
-                        ? `
-                            <div class="progress-bar clean-bar" style="margin-top:6px;">
-                                <div class="progress-inner" style="width:${progressPercent}%;"></div>
-                            </div>
-                        `
-                        : ""
-                }
+                <div style="font-size:0.85rem;">${isCurrent ? "Getting cleaned" : `Waiting #${idx + 1}`}</div>
+                ${isCurrent ? `<div class="progress-bar clean-bar"><div class="progress-inner" style="width:${progressPercent}%;"></div></div>` : ""}
             `;
-
-            elBathQueue.appendChild(card);
+            list.appendChild(card);
         });
+
+        sections.bathHouse.appendChild(list);
     }
 
-    // =========================================================================
-    // RENDER: LEADERBOARD
-    // =========================================================================
-    /*
-        Displays GameState.leaderboard as a simple list of runs.
+    function renderClinic() {
+        if (!sections.clinic) return;
+        sections.clinic.className = "card";
+        sections.clinic.innerHTML = `<h2>Clinic</h2>`;
 
-        Each entry displays:
-            - Rank
-            - Max coins
-            - Pets hatched
-            - Highest rarity
-            - Prestiges
-            - Time played (if available)
-    */
-    function renderLeaderboard() {
-        if (!elLeaderboard) return;
+        const wrapper = document.createElement("div");
+        const now = Utils.now();
 
-        elLeaderboard.innerHTML = "";
-
-        // Prefer Leaderboard.getRankedRuns() when available so runs are sorted
-        // and normalized consistently. Fall back to GameState.leaderboard.
-        let runs = [];
-        if (window.Leaderboard && typeof Leaderboard.getRankedRuns === "function") {
-            runs = Leaderboard.getRankedRuns();
-        } else if (Array.isArray(GameState.leaderboard)) {
-            runs = GameState.leaderboard;
+        if (GameState.currentPatient?.id) {
+            const animal = GameState.animals.find((a) => a.id === GameState.currentPatient.id);
+            const duration = GameState.currentPatient.durationMs || 1;
+            const elapsed = now - GameState.currentPatient.start;
+            const progressPercent = Utils.clamp(Utils.percent(elapsed, duration), 0, 100);
+            wrapper.innerHTML += `
+                <div class="card" style="margin-bottom:8px;">
+                    <div><strong>Being treated:</strong> ${animal ? animal.name : "Unknown"}</div>
+                    <div class="progress-bar"><div class="progress-inner" style="width:${progressPercent}%;"></div></div>
+                </div>
+            `;
+        } else {
+            wrapper.innerHTML += `<p>No current patient.</p>`;
         }
 
-        if (runs.length === 0) {
-            const msg = document.createElement("p");
-            msg.textContent =
-                "No leaderboard data yet. Play the game and finish a run to record a score.";
-            elLeaderboard.appendChild(msg);
+        if (Array.isArray(GameState.clinicQueue) && GameState.clinicQueue.length > 0) {
+            const queueList = document.createElement("ul");
+            GameState.clinicQueue.forEach((id) => {
+                const animal = GameState.animals.find((a) => a.id === id);
+                const name = animal ? animal.name : "Unknown";
+                const li = document.createElement("li");
+                li.textContent = `Waiting: ${name}`;
+                queueList.appendChild(li);
+            });
+            wrapper.appendChild(queueList);
+        } else {
+            const p = document.createElement("p");
+            p.textContent = "Clinic queue is empty.";
+            wrapper.appendChild(p);
+        }
+
+        sections.clinic.appendChild(wrapper);
+    }
+
+    function renderHabitats() {
+        if (!sections.habitat) return;
+        sections.habitat.className = "card";
+        sections.habitat.innerHTML = `<h2>Habitats</h2>`;
+
+        const habitats = GameState.habitats ? Object.values(GameState.habitats) : [];
+        if (!habitats.length) {
+            const p = document.createElement("p");
+            p.textContent = "Habitats will appear once the game starts.";
+            sections.habitat.appendChild(p);
             return;
         }
 
-        // Create a simple list of cards for each leaderboard entry
-        runs.forEach((run, index) => {
+        const grid = document.createElement("div");
+        grid.className = "card-grid";
+
+        habitats.forEach((habitat) => {
+            const animalsInHabitat = Array.isArray(habitat.animalIds)
+                ? habitat.animalIds.filter((id) => GameState.animals.some((a) => a.id === id))
+                : [];
+            const cfg = (window.HabitatConfig || []).find((h) => h.key === habitat.key);
+            const name = cfg?.name || habitat.key;
+
             const card = document.createElement("div");
             card.className = "card";
-
-            // Use normalized fields where available
-            const maxCoins      = run.maxCoins ?? run.coins ?? 0;
-            const petsHatched   = run.petsHatched ?? 0;
-            const highestRarity = run.highestRarity ?? "Unknown";
-            const prestiges     = run.prestigesAfter ?? run.prestigesBefore ?? run.prestiges ?? 0;
-            const timePlayedMs  = run.timePlayed ?? 0;
-
-            // Convert ms to seconds/minutes text for readability
-            const timeText = Utils.formatTime(timePlayedMs);
-
             card.innerHTML = `
-                <div style="font-weight:700; margin-bottom:4px;">
-                    #${index + 1} – Best Zoo
-                </div>
-                <div style="font-size:0.85rem;">
-                    Max Coins: <strong>${maxCoins}</strong><br>
-                    Pets Hatched: <strong>${petsHatched}</strong><br>
-                    Highest Rarity: <strong>${highestRarity}</strong><br>
-                    Prestiges: <strong>${prestiges}</strong><br>
-                    Time Played: <strong>${timeText}</strong>
-                </div>
+                <div><strong>${name}</strong></div>
+                <div class="income-text">Level: ${habitat.level || 1}</div>
+                <div class="income-text">Capacity: ${habitat.capacity || 0}</div>
+                <div class="income-text">Animals: ${animalsInHabitat.length}</div>
             `;
-
-            elLeaderboard.appendChild(card);
+            grid.appendChild(card);
         });
+
+        sections.habitat.appendChild(grid);
     }
 
-    // =========================================================================
-    // MAIN RENDER ENTRY POINT
-    // =========================================================================
-    /*
-        Call Render.all() whenever:
-            - The game ticks (once per second from main.js)
-            - The state changes significantly (like buying eggs / hatching)
+    function renderEvents() {
+        if (!sections.events) return;
+        sections.events.className = "card";
+        sections.events.innerHTML = `<h2>Events</h2>`;
 
-        It will:
-            - Update top stats
-            - Redraw egg shop (in case prices or egg types change later)
-            - Redraw incubator
-            - Redraw zoo
-            - Redraw bath house
-            - Redraw leaderboard
-    */
+        const history = GameState.events?.history || [];
+        if (history.length === 0) {
+            const p = document.createElement("p");
+            p.textContent = "No events yet.";
+            sections.events.appendChild(p);
+            return;
+        }
+
+        const recent = history.slice(-5).reverse();
+        const list = document.createElement("ul");
+        recent.forEach((ev) => {
+            const li = document.createElement("li");
+            li.textContent = `${ev.name} – ${ev.description || ""}`;
+            list.appendChild(li);
+        });
+        sections.events.appendChild(list);
+    }
+
+    function renderLeaderboard() {
+        if (!sections.leaderboard) return;
+        sections.leaderboard.className = "card";
+        sections.leaderboard.innerHTML = `<h2>Leaderboard</h2>`;
+
+        const runs = window.Leaderboard?.getRankedRuns
+            ? Leaderboard.getRankedRuns(5)
+            : (Array.isArray(GameState.leaderboard) ? GameState.leaderboard : []);
+
+        if (!runs || runs.length === 0) {
+            const p = document.createElement("p");
+            p.textContent = "No leaderboard data yet. Prestige to record a run.";
+            sections.leaderboard.appendChild(p);
+            return;
+        }
+
+        const table = document.createElement("table");
+        table.style.width = "100%";
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Coins</th>
+                    <th>Pets</th>
+                    <th>Best Rarity</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        `;
+
+        const tbody = table.querySelector("tbody");
+        runs.forEach((run, idx) => {
+            const formatted = window.Leaderboard?.formatRunForDisplay
+                ? Leaderboard.formatRunForDisplay(run, idx)
+                : { rank: idx + 1, coins: run.coins, petsHatched: run.petsHatched, highestRarity: run.highestRarity, timeMinutes: Math.round((run.timePlayed || 0) / 60000) };
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${formatted.rank}</td>
+                <td>${formatted.coins}</td>
+                <td>${formatted.petsHatched}</td>
+                <td>${formatted.highestRarity}</td>
+                <td>${formatted.timeMinutes}m</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        sections.leaderboard.appendChild(table);
+    }
+
+    function renderPrestige() {
+        if (!sections.prestige) return;
+        sections.prestige.className = "card";
+        const prestigeCount = GameState.prestige?.count ?? 0;
+        const multiplier = formatNumber(GameState.modifiers?.globalPrestigeMultiplier ?? 1);
+        const canPrestige = window.PrestigeSystem?.canPrestige
+            ? PrestigeSystem.canPrestige()
+            : false;
+
+        sections.prestige.innerHTML = `
+            <h2>Prestige</h2>
+            <p>Total Prestiges: ${prestigeCount}</p>
+            <p>Global Income Multiplier: x${multiplier}</p>
+            <button class="egg-button" data-action="prestige" ${!canPrestige || GameState.isGameOver ? "disabled" : ""}>
+                Prestige
+            </button>
+            ${!canPrestige ? `<p style="font-size:0.85rem; color:#555;">Need more coins/animals to prestige.</p>` : ""}
+        `;
+    }
+
     function renderAll() {
-        renderTopStats();
+        renderTopBar();
+        renderGameOver();
         renderEggShop();
         renderIncubator();
         renderZoo();
         renderBathHouse();
+        renderClinic();
+        renderHabitats();
+        renderEvents();
         renderLeaderboard();
+        renderPrestige();
     }
 
-    // Expose functions on a single global object
     window.Render = {
-        topStats: renderTopStats,
-        eggShop: renderEggShop,
-        incubator: renderIncubator,
-        zoo: renderZoo,
-        bathHouse: renderBathHouse,
-        leaderboard: renderLeaderboard,
         all: renderAll
     };
 })();

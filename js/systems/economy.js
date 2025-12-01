@@ -118,6 +118,9 @@
 
         let totalIncomePerSecond = 0;
 
+        const prestigeMult = Number(GS.modifiers?.globalPrestigeMultiplier ?? 1) || 1;
+        const eventMult = Number(GS.modifiers?.incomeBoostMultiplier ?? 1) || 1;
+
         // Sum up income from all eligible animals
         for (let i = 0; i < GS.animals.length; i++) {
             const animal = GS.animals[i];
@@ -126,6 +129,9 @@
             const income      = Number(animal.income) || 0;
             const hunger      = Number(animal.hunger ?? 0);
             const cleanliness = Number(animal.cleanliness ?? 0);
+            const happiness   = Number(animal.happiness ?? 0);
+            const happyMult   = Number(animal.happinessIncomeMultiplier ?? 1) || 1;
+            const habitatMult = Number(animal.habitatBonusMultiplier ?? 1) || 1;
 
             // Optionally support future disease system:
             // - If healthStatus === "sick", no income.
@@ -136,14 +142,24 @@
             // - hunger > 0
             // - cleanliness > 0
             // - not sick
+            // - happiness above 0 (completely unhappy animals earn nothing)
             const canEarn =
                 income > 0 &&
                 hunger > 0 &&
                 cleanliness > 0 &&
+                happiness > 0 &&
                 !isSick;
 
+            const effectiveIncome = income
+                * happyMult
+                * habitatMult
+                * prestigeMult
+                * eventMult;
+
+            animal.effectiveIncome = canEarn ? effectiveIncome : 0;
+
             if (canEarn) {
-                totalIncomePerSecond += income;
+                totalIncomePerSecond += effectiveIncome;
             }
         }
 

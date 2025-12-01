@@ -121,6 +121,12 @@
     const HAPPINESS_MIN = 0;
     const HAPPINESS_MAX = 100;
 
+    /*
+        Care decay:
+        Hunger drifts downward over time so players must feed pets.
+    */
+    const HUNGER_DECAY_PER_TICK = 0.5; // ~50 seconds to go from 100 to 75
+
     // =========================================================================
     // HAPPINESS → INCOME MULTIPLIER MAPPING
     // =========================================================================
@@ -178,6 +184,9 @@
         if (typeof animal.happiness !== "number") {
             animal.happiness = BASE_HAPPINESS;
         }
+        if (typeof animal.hunger !== "number") {
+            animal.hunger = 100;
+        }
 
         let happiness = animal.happiness;
 
@@ -185,8 +194,14 @@
         const healthStatus = animal.healthStatus || "healthy";
 
         // Use fallback values if hunger/cleanliness are missing
-        const hunger      = Number(animal.hunger ?? 0);
+        let hunger        = Number(animal.hunger ?? 0);
         const cleanliness = Number(animal.cleanliness ?? 0);
+
+        // Hunger naturally decreases over time
+        hunger = (U && typeof U.clamp === "function")
+            ? U.clamp(hunger - HUNGER_DECAY_PER_TICK, 0, 100)
+            : Math.max(0, hunger - HUNGER_DECAY_PER_TICK);
+        animal.hunger = hunger;
 
         // 2) Start with natural drift (slight downward pressure over time)
         happiness += NATURAL_DRIFT_PER_TICK;

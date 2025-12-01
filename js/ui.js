@@ -55,6 +55,8 @@
     function init() {
         setupEggShopHandlers();
         setupZooHandlers();
+        setupPrestigeHandlers();
+        setupGameOverHandlers();
     }
 
     // =========================================================================
@@ -64,23 +66,27 @@
         Uses **event delegation** on the egg shop container.
 
         Instead of attaching a separate listener to each egg button, we:
-        - Attach ONE listener to #egg-shop
-        - Check if the click came from (or inside) an element with .egg-button
+        - Attach ONE listener to #egg-shop-section
+        - Check if the click came from (or inside) an element with data-action="buy-egg"
         - Read data-egg-type attribute
         - Call EconomySystem.buyEgg(typeKey)
     */
 
     function setupEggShopHandlers() {
-        const elEggShop = $("egg-shop");
+        const elEggShop = $("egg-shop-section");
         if (!elEggShop) {
-            console.warn("UI: #egg-shop element not found. Egg shop clicks won't work.");
+            console.warn("UI: #egg-shop-section element not found. Egg shop clicks won't work.");
             return;
         }
 
         elEggShop.addEventListener("click", function onEggShopClick(event) {
-            // Find the closest ancestor with class .egg-button (could be the button itself)
-            const button = event.target.closest(".egg-button");
+            const button = event.target.closest("[data-action=\"buy-egg\"]");
             if (!button) return; // Click was not on an egg button
+
+            if (window.GameState?.isGameOver) {
+                console.warn("UI: Ignoring egg purchase while game is over.");
+                return;
+            }
 
             const typeKey = button.getAttribute("data-egg-type");
             if (!typeKey) {
@@ -126,39 +132,51 @@
         Uses event delegation on the #zoo container.
 
         We listen for clicks on:
-            - .card-button.feed   → Feed animal
-            - .card-button.clean  → Clean / send to bath
-            - .card-button.sell   → Sell animal
+            - data-action="feed"            → Feed animal
+            - data-action="clean"           → Clean / send to bath
+            - data-action="sell"            → Sell animal
+            - data-action="send-to-clinic"  → Send sick animal to clinic
+            - data-action="assign-habitat"  → Move animal into habitat
 
         Each button has:
             data-animal-id="<id>"
     */
 
     function setupZooHandlers() {
-        const elZoo = $("zoo");
+        const elZoo = $("zoo-section");
         if (!elZoo) {
-            console.warn("UI: #zoo element not found. Zoo actions won't work.");
+            console.warn("UI: #zoo-section element not found. Zoo actions won't work.");
             return;
         }
 
         elZoo.addEventListener("click", function onZooClick(event) {
-            // Find the closest element with .card-button (could be the button or its child)
-            const btn = event.target.closest(".card-button");
+            const btn = event.target.closest("[data-action]");
             if (!btn) return; // Click not on a zoo action button
 
             const animalId = btn.getAttribute("data-animal-id");
-            if (!animalId) {
-                console.warn("UI: Card button missing data-animal-id attribute.");
+            const action = btn.getAttribute("data-action");
+
+            if (window.GameState?.isGameOver) {
+                console.warn("UI: Ignoring zoo action while game is over.");
                 return;
             }
 
-            // Determine the type of action based on button classes
-            if (btn.classList.contains("feed")) {
+            if (action === "feed") {
+                if (!animalId) return;
                 handleFeedAnimal(animalId);
-            } else if (btn.classList.contains("clean")) {
+            } else if (action === "clean") {
+                if (!animalId) return;
                 handleCleanAnimal(animalId);
-            } else if (btn.classList.contains("sell")) {
+            } else if (action === "sell") {
+                if (!animalId) return;
                 handleSellAnimal(animalId);
+            } else if (action === "send-to-clinic") {
+                if (!animalId) return;
+                handleSendToClinic(animalId);
+            } else if (action === "assign-habitat") {
+                if (!animalId) return;
+                const habitatKey = btn.getAttribute("data-habitat-key");
+                handleAssignHabitat(animalId, habitatKey);
             }
         });
     }
@@ -251,6 +269,85 @@
         }
     }
 
+    // -------------------------------------------------------------------------
+    // SEND TO CLINIC
+    // -------------------------------------------------------------------------
+    function handleSendToClinic(animalId) {
+        if (!window.DiseaseSystem || typeof DiseaseSystem.sendToClinicById !== "function") {
+            console.warn("UI: DiseaseSystem.sendToClinicById(id) is not defined.");
+            return;
+        }
+
+        const success = DiseaseSystem.sendToClinicById(animalId);
+        if (success) {
+            Render.all();
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // ASSIGN HABITAT
+    // -------------------------------------------------------------------------
+    function handleAssignHabitat(animalId, habitatKey) {
+        if (!window.HabitatSystem || typeof HabitatSystem.assignToHabitat !== "function") {
+            console.warn("UI: HabitatSystem.assignToHabitat(id, key) is not defined.");
+            return;
+        }
+        if (!habitatKey) {
+            console.warn("UI: Habitat key missing on habitat button.");
+            return;
+        }
+
+        const success = HabitatSystem.assignToHabitat(animalId, habitatKey);
+        if (success) {
+            Render.all();
+        }
+    }
+
+    // =========================================================================
+    // PRESTIGE HANDLERS
+    // =========================================================================
+    function setupPrestigeHandlers() {
+        const elPrestige = $("prestige-section");
+        if (!elPrestige) return;
+
+        elPrestige.addEventListener("click", (event) => {
+            const btn = event.target.closest("[data-action=\"prestige\"]");
+            if (!btn) return;
+            if (!window.PrestigeSystem || typeof PrestigeSystem.doPrestige !== "function") {
+                console.warn("UI: PrestigeSystem.doPrestige() missing.");
+                return;
+            }
+            const result = PrestigeSystem.doPrestige();
+            if (result?.success) {
+                Render.all();
+            } else if (result?.reason) {
+                console.warn("UI: Prestige failed →", result.reason);
+            }
+        });
+    }
+
+    // =========================================================================
+    // GAME OVER / RESTART HANDLER
+    // =========================================================================
+    function setupGameOverHandlers() {
+        const elGameOver = $("game-over-section");
+        if (!elGameOver) return;
+
+        elGameOver.addEventListener("click", (event) => {
+            const btn = event.target.closest("[data-action=\"restart\"]");
+            if (!btn) return;
+            if (!window.LoseSystem || typeof LoseSystem.restartGame !== "function") {
+                console.warn("UI: LoseSystem.restartGame() missing.");
+                return;
+            }
+            LoseSystem.restartGame();
+            if (window.GameMain && typeof window.GameMain.restart === "function") {
+                window.GameMain.restart();
+            }
+            Render.all();
+        });
+    }
+
     // =========================================================================
     // EXPORT (if needed)
     // =========================================================================
@@ -265,6 +362,8 @@
         handleBuyEgg,
         handleFeedAnimal,
         handleCleanAnimal,
-        handleSellAnimal
+        handleSellAnimal,
+        handleAssignHabitat,
+        handleSendToClinic
     };
 })();

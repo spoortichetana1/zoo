@@ -459,8 +459,12 @@
         // Update summary's 'prestigesAfter' to match new count
         summary.prestigesAfter = GS.prestige.count;
 
-        // 4) Add summary to leaderboard
-        GS.leaderboard.push(summary);
+        // 4) Add summary to leaderboard (persist if Leaderboard API is available)
+        if (window.Leaderboard && typeof window.Leaderboard.recordRun === "function") {
+            window.Leaderboard.recordRun(summary);
+        } else {
+            GS.leaderboard.push(summary);
+        }
 
         // 5) Reset zoo for the next run
         resetZooForNewRun();

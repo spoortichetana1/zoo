@@ -198,6 +198,14 @@
         const previous = typeof GS.lastTick === "number" ? GS.lastTick : now;
         const dt = now - previous; // delta time in ms (currently not used inside systems)
 
+        // If the game is over, skip logic but keep rendering so the player sees the message.
+        if (GS.isGameOver) {
+            if (window.Render && typeof window.Render.all === "function") {
+                safeCall("Render.all (game over)", window.Render.all);
+            }
+            return;
+        }
+
         // --- 1. Logic systems -------------------------------------------------
 
         // Eggs → Animals
@@ -233,6 +241,11 @@
         // Economy (coins per second from animals, etc.)
         if (window.EconomySystem && typeof window.EconomySystem.tick === "function") {
             safeCall("EconomySystem.tick", window.EconomySystem.tick);
+        }
+
+        // Lose conditions (sets GameState.isGameOver if any trigger)
+        if (window.LoseSystem && typeof window.LoseSystem.tick === "function") {
+            safeCall("LoseSystem.tick", window.LoseSystem.tick);
         }
 
         // --- 2. Update timing -------------------------------------------------
@@ -321,6 +334,11 @@
 
         initGameStateTiming();
         initModules();
+
+        // Ensure habitat structures exist before first render.
+        if (window.HabitatSystem && typeof window.HabitatSystem.tick === "function") {
+            safeCall("HabitatSystem.tick (initial)", window.HabitatSystem.tick);
+        }
 
         // First draw before any ticks, so the player sees something immediately.
         if (window.Render && typeof window.Render.all === "function") {
