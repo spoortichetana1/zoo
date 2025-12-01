@@ -1,158 +1,252 @@
 /* 
-    ============================================================================
+    =============================================================================
     FANTASY ZOO - GLOBAL GAME STATE (js/state.js)
-    ============================================================================
-    This file defines the **single source of truth** for the entire game.
+    =============================================================================
+    RESPONSIBILITY:
+    ---------------
+    This file defines ONE shared global object: window.GameState.
 
-    IMPORTANT NOTES:
-    ----------------
-    - Every system (hatching, feeding, cleaning, economy, happiness, etc.)
-      reads and writes from this shared GameState object.
-    
-    - If the game behaves strangely (wrong coin numbers, pets not showing,
-      bath queue not updating, etc.), 90% of the time the issue is:
-          ➜ Wrong values stored in GameState
-          ➜ A system writing incorrect data
-          ➜ Data missing from here
-    
-    - NOTHING in this file should contain logic. 
-      It should ONLY contain the initial state and defaults.
-    
-    - This file must be loaded before ANY other JS, otherwise GameState
-      will be undefined and everything will break.
+    All systems (hatching, economy, cleaning, disease, habitats, events,
+    prestige, leaderboard, render, ui, etc.) read and write data on this
+    object.
+
+    IMPORTANT:
+    ----------
+    - This file should be loaded BEFORE any other game logic files.
+      (index.html: include state.js near the top of the JS list.)
+    - We only define data here, NOT behavior. No timers, no DOM code.
+
+    WHAT WE STORE HERE:
+    -------------------
+    1. Basic economy & collections:
+         - coins
+         - incomePerSecond
+         - animals[]
+         - eggs[]
+
+    2. Bath house:
+         - bathQueue[]
+         - currentBath
+
+    3. Disease / clinic:
+         - clinicQueue[]
+         - currentPatient
+
+    4. Habitats:
+         - habitats {}   (structure is filled/maintained by HabitatSystem)
+
+    5. Events:
+         - events { activeEvents[], history[], lastEventTime }
+
+    6. Leaderboard:
+         - leaderboard[]  (list of finished run summaries)
+
+    7. Prestige & global modifiers:
+         - prestige { count, totalPrestigePoints, lastPrestigeTime }
+         - modifiers { globalPrestigeMultiplier, incomeBoostMultiplier }
+
+    8. Timing:
+         - runStartTime
+         - lastTick
 */
 
+(function () {
+    "use strict";
 
-// ============================================================================
-// GLOBAL GAME STATE OBJECT
-// This is declared on the window object so all JS files can access it.
-// ============================================================================
+    /*
+        STARTING_COINS:
+        ---------------
+        How many coins the player starts with at the very beginning
+        of the very first run.
 
-window.GameState = {
-
-    /* 
-        -------------------------
-        BASIC CURRENCY & INCOME
-        -------------------------
-
-        coins:
-            The player's current coin balance. This should always be a number
-            and will be updated once per tick by the EconomySystem.
-
-        incomePerSecond:
-            The total coins earned per second from all active animals.
-            Used ONLY for display; EconomySystem always recalculates it.
+        - After a prestige, PRESTIGE SYSTEM may override this with its own
+          starting coins logic.
     */
-    coins: 100,               // Starting amount; adjust anytime
-    incomePerSecond: 0,       // Calculated every tick
+    const STARTING_COINS = 100;
 
-
-    /* 
-        -------------------------
-        EGGS (INCUBATOR)
-        -------------------------
-
-        eggs:
-            An array of egg objects currently incubating.
-            Each egg object will have:
-                - id: unique id
-                - type: common / rare / mystic
-                - start: timestamp when incubation started
-                - hatchTime: how long until it hatches (ms)
+    /*
+        We define GameState as a plain JavaScript object and attach it to
+        window so all other files can access it as window.GameState.
     */
-    eggs: [],
+    window.GameState = {
+        // ---------------------------------------------------------------------
+        // 1. BASIC ECONOMY & COLLECTIONS
+        // ---------------------------------------------------------------------
 
+        /*
+            Player's current coins.
+            - Modified mainly by EconomySystem, EconomySystem.buyEgg(),
+              EconomySystem.sellAnimalById(), DiseaseSystem (clinic costs),
+              PrestigeSystem (reset), etc.
+        */
+        coins: STARTING_COINS,
 
-    /* 
-        -------------------------
-        ANIMALS (ZOO)
-        -------------------------
+        /*
+            How many coins the zoo is earning PER SECOND right now.
+            - EconomySystem updates this every tick.
+            - Render.js uses it in the top bar.
+        */
+        incomePerSecond: 0,
 
-        animals:
-            An array of animal objects currently in the zoo.
-            Each animal object will contain:
-                - id
-                - name
-                - emoji
-                - rarity
-                - income
-                - hunger (0–100)
-                - cleanliness (0–100)
-                - happiness (0–100)   [future system]
-                - healthStatus        [future system]
-                - habitat             [future system]
-    */
-    animals: [],
+        /*
+            All currently owned animals live in this array.
+            - Each entry is an "animal instance" created by HatchingSystem
+              from a template in AnimalPools (animals.js).
+        */
+        animals: [],
 
+        /*
+            All eggs currently incubating live in this array.
+            - Each entry is an "egg instance" created by EconomySystem.buyEgg()
+              and transformed into animals by HatchingSystem.tick().
+        */
+        eggs: [],
 
-    /* 
-        -------------------------
-        BATH HOUSE QUEUE
-        -------------------------
+        // ---------------------------------------------------------------------
+        // 2. BATH HOUSE
+        // ---------------------------------------------------------------------
 
-        bathQueue:
-            Stores animal IDs waiting for a bath.
-            The CleaningSystem processes this array in FIFO order.
+        /*
+            Queue of animal IDs waiting to use the bath.
+            - CleaningSystem uses this.
+        */
+        bathQueue: [],
 
-        currentBath:
-            Object describing the animal currently in the bath.
-            Contains:
-                - id: animal ID
-                - start: timestamp when bath began
-            If null → bath is empty.
-    */
-    bathQueue: [],
-    currentBath: null,
+        /*
+            Information about the animal that is currently being cleaned.
+            - Either:
+                 null
+              OR:
+                 {
+                   id: <animalId>,
+                   start: <timestamp ms>,
+                   durationMs: <number>
+                 }
+        */
+        currentBath: null,
 
+        // ---------------------------------------------------------------------
+        // 3. DISEASE / CLINIC
+        // ---------------------------------------------------------------------
 
-    /* 
-        -------------------------
-        HABITATS (FUTURE SYSTEM)
-        -------------------------
+        /*
+            Queue of animal IDs waiting for treatment in the clinic.
+            - Managed by DiseaseSystem.
+        */
+        clinicQueue: [],
 
-        habitats:
-            Stores habitat structures like:
-            {
-                forest: { level: 1, animals: [...] },
-                desert: { level: 1, animals: [...] },
-                ... etc ...
-            }
-            For now it starts empty and will be filled once habitat system is added.
-    */
-    habitats: {},
+        /*
+            Current patient being treated in the clinic.
+            - Either null or same shape as currentBath:
+                { id, start, durationMs }
+        */
+        currentPatient: null,
 
+        // ---------------------------------------------------------------------
+        // 4. HABITATS
+        // ---------------------------------------------------------------------
 
-    /* 
-        -------------------------
-        LEADERBOARD (LOCAL STORAGE)
-        -------------------------
+        /*
+            All habitat data goes here.
 
-        leaderboard:
-            Contains previous run summaries.
-            Example:
-            [
+            Shape:
                 {
-                    coins: 5000,
-                    maxCoins: 9000,
-                    petsHatched: 30,
-                    highestRarity: "Legendary",
-                    prestiges: 2,
-                    timePlayed: 600000
+                  forest: { key, level, capacity, animalIds: [...] },
+                  desert: { ... },
+                  ...
                 }
-            ]
-    */
-    leaderboard: [],
 
+            - HabitatSystem.ensureHabitatState() fills and maintains this
+              structure each tick. We start with an empty object here.
+        */
+        habitats: {},
 
-    /* 
-        -------------------------
-        GAME TIMESTAMP
-        -------------------------
+        // ---------------------------------------------------------------------
+        // 5. EVENTS
+        // ---------------------------------------------------------------------
 
-        lastTick:
-            Used by main.js to track delta time between ticks.
-            While most idle games don't need delta precision, this allows future
-            expansion (offline earnings, speed boosts, tick smoothing).
-    */
-    lastTick: Date.now()
-};
+        /*
+            Random events system state.
+
+            - activeEvents: currently running timed events
+            - history     : recent past events (for log / UI)
+            - lastEventTime: last time a new event was triggered (ms)
+        */
+        events: {
+            activeEvents: [],
+            history: [],
+            lastEventTime: 0
+        },
+
+        // ---------------------------------------------------------------------
+        // 6. LEADERBOARD
+        // ---------------------------------------------------------------------
+
+        /*
+            Local leaderboard entries (finished runs).
+
+            - Leaderboard.init() loads this from localStorage on startup.
+            - PrestigeSystem + Leaderboard.recordRun() add new entries here
+              when the player prestiges.
+        */
+        leaderboard: [],
+
+        // ---------------------------------------------------------------------
+        // 7. PRESTIGE & GLOBAL MODIFIERS
+        // ---------------------------------------------------------------------
+
+        /*
+            Prestige meta-progress across runs.
+        */
+        prestige: {
+            /*
+                How many times the player has prestiged so far.
+             */
+            count: 0,
+
+            /*
+                Total prestige points earned.
+                - For now, each prestige gives +1.
+                - You can later use this to buy permanent unlocks.
+            */
+            totalPrestigePoints: 0,
+
+            /*
+                Timestamp (ms) of the last prestige.
+            */
+            lastPrestigeTime: 0
+        },
+
+        /*
+            Global modifiers that affect the whole zoo.
+
+            - globalPrestigeMultiplier:
+                  * Permanent income multiplier from prestige.
+                  * Starts at 1.0 (no bonus).
+            - incomeBoostMultiplier:
+                  * Temporary multiplier from events (e.g., "Double Tips").
+                  * EventsSystem will update this.
+        */
+        modifiers: {
+            globalPrestigeMultiplier: 1,
+            incomeBoostMultiplier: 1
+        },
+
+        // ---------------------------------------------------------------------
+        // 8. TIMING
+        // ---------------------------------------------------------------------
+
+        /*
+            Time when the CURRENT RUN started, in ms.
+            - main.js sets this when the game boots or when prestige reset
+              happens.
+        */
+        runStartTime: null,
+
+        /*
+            Timestamp of the last tick executed by the main loop.
+            - main.js updates this every tick.
+        */
+        lastTick: null
+    };
+})();
