@@ -407,3 +407,87 @@
             - Time played (if available)
     */
     function renderLeaderboard() {
+        if (!elLeaderboard) return;
+
+        elLeaderboard.innerHTML = "";
+
+        const runs = Array.isArray(GameState.leaderboard)
+            ? GameState.leaderboard
+            : [];
+
+        if (runs.length === 0) {
+            const msg = document.createElement("p");
+            msg.textContent =
+                "No leaderboard data yet. Play the game and finish a run to record a score.";
+            elLeaderboard.appendChild(msg);
+            return;
+        }
+
+        // Create a simple list of cards for each leaderboard entry
+        runs.forEach((run, index) => {
+            const card = document.createElement("div");
+            card.className = "card";
+
+            // Fallbacks in case some fields aren't present yet
+            const maxCoins      = run.maxCoins ?? run.coins ?? 0;
+            const petsHatched   = run.petsHatched ?? 0;
+            const highestRarity = run.highestRarity ?? "Unknown";
+            const prestiges     = run.prestiges ?? 0;
+            const timePlayedMs  = run.timePlayed ?? 0;
+
+            // Convert ms to seconds/minutes text for readability
+            const timeText = Utils.formatTime(timePlayedMs);
+
+            card.innerHTML = `
+                <div style="font-weight:700; margin-bottom:4px;">
+                    #${index + 1} – Best Zoo
+                </div>
+                <div style="font-size:0.85rem;">
+                    Max Coins: <strong>${maxCoins}</strong><br>
+                    Pets Hatched: <strong>${petsHatched}</strong><br>
+                    Highest Rarity: <strong>${highestRarity}</strong><br>
+                    Prestiges: <strong>${prestiges}</strong><br>
+                    Time Played: <strong>${timeText}</strong>
+                </div>
+            `;
+
+            elLeaderboard.appendChild(card);
+        });
+    }
+
+    // =========================================================================
+    // MAIN RENDER ENTRY POINT
+    // =========================================================================
+    /*
+        Call Render.all() whenever:
+            - The game ticks (once per second from main.js)
+            - The state changes significantly (like buying eggs / hatching)
+
+        It will:
+            - Update top stats
+            - Redraw egg shop (in case prices or egg types change later)
+            - Redraw incubator
+            - Redraw zoo
+            - Redraw bath house
+            - Redraw leaderboard
+    */
+    function renderAll() {
+        renderTopStats();
+        renderEggShop();
+        renderIncubator();
+        renderZoo();
+        renderBathHouse();
+        renderLeaderboard();
+    }
+
+    // Expose functions on a single global object
+    window.Render = {
+        topStats: renderTopStats,
+        eggShop: renderEggShop,
+        incubator: renderIncubator,
+        zoo: renderZoo,
+        bathHouse: renderBathHouse,
+        leaderboard: renderLeaderboard,
+        all: renderAll
+    };
+})();
