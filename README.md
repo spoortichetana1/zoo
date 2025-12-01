@@ -1,5 +1,7 @@
 # 🐾 Fantasy Zoo — Idle Pet Management Game
 
+TRY GAME HERE --> https://spoortichetana1.github.io/zoo/
+
 Fantasy Zoo is a modular, extendable browser game built with plain HTML, CSS, and JavaScript. Hatch eggs, grow animals, manage their needs, cure sickness, balance income, handle random events, and build the greatest fantasy zoo possible.
 
 ---
