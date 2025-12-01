@@ -1,131 +1,136 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!--
-        Fantasy Zoo - index.html
-        This file defines the page structure and loads all CSS + JS files.
-        All game logic lives in the JS files under /js and /js/systems.
-    -->
-
     <meta charset="UTF-8" />
+    <title>Fantasy Zoo</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fantasy Zoo 🐾</title>
 
-    <!-- Main stylesheet for layout, colors, and components -->
+    <!-- LINK TO MAIN CSS FILE -->
     <link rel="stylesheet" href="css/style.css" />
 </head>
+
 <body>
-    <div class="game-container">
-        <!-- ================= TOP BAR ================= -->
-        <header class="top-bar">
-            <h1 class="game-title">🐾 Fantasy Zoo</h1>
-            <div class="top-stats">
-                <div class="stat">
-                    Coins:
-                    <span id="coin-count">0</span>
-                </div>
-                <div class="stat">
-                    Income:
-                    <span id="income-rate">0</span>/s
-                </div>
-            </div>
-        </header>
+    <div id="app">
 
-        <!-- ================= EGG SHOP ================= -->
-        <section class="panel" id="panel-egg-shop">
-            <h2>🥚 Egg Shop</h2>
-            <p class="panel-description">
-                Spend coins to buy eggs. Different egg types hatch into different kinds of magical animals.
-            </p>
+        <!-- ============================================================
+             TOP BAR (Coins, Income per second, etc.)
+             renderTopBar() will fully replace contents of this section
+        =============================================================== -->
+        <header id="top-bar" class="card"></header>
 
-            <!-- Buttons for each egg type will be rendered into this container by JS -->
-            <div id="egg-shop" class="egg-shop-container">
-                <!-- Example (will be replaced by JS):
-                <button class="egg-button" data-type="common">Common Egg – 20 💰</button>
-                -->
-            </div>
-        </section>
 
-        <!-- ================= INCUBATOR ================= -->
-        <section class="panel" id="panel-incubator">
-            <h2>⏳ Incubator</h2>
-            <p class="panel-description">
-                Your eggs are incubating here. Watch the timers and wait for them to hatch into new pets.
-            </p>
+        <!-- ============================================================
+             OPTIONAL GAME OVER SECTION
+             - This stays empty during normal gameplay
+             - When the lose conditions trigger:
+                 * LoseSystem.tick() sets GameState.isGameOver = true
+                 * renderGameOver() injects the GAME OVER UI here
+             - This is kept ABOVE all other UI so player sees it instantly
+        =============================================================== -->
+        <section id="game-over-section" class="card"></section>
 
-            <!-- Egg cards (with timers and progress bars) will be rendered here -->
-            <div id="incubator" class="card-grid">
-                <!-- JS will populate egg cards -->
-            </div>
-        </section>
 
-        <!-- ================= ZOO (PETS) ================= -->
-        <section class="panel" id="panel-zoo">
-            <h2>🦄 Your Zoo</h2>
-            <p class="panel-description">
-                All your animals live here. Keep them fed and clean so they keep earning coins for your zoo.
-            </p>
+        <!-- ============================================================
+             MAIN 3-COLUMN LAYOUT
+             Left  = Egg Shop / Incubator / Bath House / Clinic
+             Middle = Zoo + Habitats
+             Right = Events + Leaderboard + Prestige
+        =============================================================== -->
+        <main class="layout">
 
-            <!-- Animal cards (with hunger, cleanliness, buttons) will be rendered here -->
-            <div id="zoo" class="card-grid">
-                <!-- JS will populate animal cards -->
-            </div>
-        </section>
+            <!-- ========================================================
+                 LEFT COLUMN
+            ========================================================= -->
+            <section class="column left-column">
 
-        <!-- ================= BATH HOUSE ================= -->
-        <section class="panel" id="panel-bath-house">
-            <h2>🛁 Bath House</h2>
-            <p class="panel-description">
-                Pets go here when you send them for a bath. Only one pet is cleaned at a time, others wait in a queue.
-            </p>
+                <!-- Egg Shop -->
+                <section id="egg-shop-section" class="card"></section>
 
-            <!-- Bath queue: current pet in bath + waiting pets -->
-            <div id="bath-queue" class="card-grid">
-                <!-- JS will render the current bath pet and queue order -->
-            </div>
-        </section>
+                <!-- Incubator for eggs currently hatching -->
+                <section id="incubator-section" class="card"></section>
 
-        <!-- ================= LEADERBOARD ================= -->
-        <section class="panel" id="panel-leaderboard">
-            <h2>🏆 Leaderboard</h2>
-            <p class="panel-description">
-                See your best zoo runs here. Scores are stored locally on this device.
-            </p>
+                <!-- Bath House -->
+                <section id="bath-house-section" class="card"></section>
 
-            <!-- Leaderboard entries will be rendered as rows/cards here -->
-            <div id="leaderboard" class="leaderboard-container">
-                <!-- JS will populate leaderboard entries -->
-            </div>
-        </section>
+                <!-- ====================================================
+                     CLINIC SECTION (NEW)
+                     - Shows list of sick animals
+                     - Shows clinic queue & animal currently being treated
+                     - Filled by renderClinic()
+                ======================================================= -->
+                <section id="clinic-section" class="card"></section>
 
-        <!-- ================= FOOTER ================= -->
-        <footer class="footer">
-            <p>
-                Fantasy Zoo &copy; 
-                <span id="footer-year">
-                    <!-- JS can optionally fill the current year here -->
-                </span>
-            </p>
-        </footer>
-    </div>
+            </section>
 
-    <!-- ================= SCRIPT LOADING ORDER =================
-         The order matters:
-         1. state + utils
-         2. data definitions (eggs, animals)
-         3. systems (game logic)
-         4. render + UI + main loop
-    =========================================================== -->
 
-    <!-- 1) Core state and utilities -->
+
+            <!-- ========================================================
+                 MIDDLE COLUMN
+            ========================================================= -->
+            <section class="column middle-column">
+
+                <!-- Player's Zoo (all animals rendered here) -->
+                <section id="zoo-section" class="card"></section>
+
+                <!-- ====================================================
+                     HABITATS SECTION (NEW)
+                     - Shows all habitats (forest, desert, ocean...)
+                     - Displays capacity & animals inside each habitat
+                     - Filled by renderHabitats()
+                ======================================================= -->
+                <section id="habitat-section" class="card"></section>
+
+            </section>
+
+
+
+            <!-- ========================================================
+                 RIGHT COLUMN
+            ========================================================= -->
+            <section class="column right-column">
+
+                <!-- ====================================================
+                     EVENTS SECTION (NEW)
+                     - Shows recent random events (buffs / debuffs)
+                     - Filled by renderEvents()
+                ======================================================= -->
+                <section id="events-section" class="card"></section>
+
+                <!-- Leaderboard Section -->
+                <section id="leaderboard-section" class="card"></section>
+
+                <!-- ====================================================
+                     PRESTIGE SECTION (NEW)
+                     - Shows prestige count
+                     - Shows permanent multipliers
+                     - Has the "Prestige" button
+                     - Filled by renderPrestige()
+                ======================================================= -->
+                <section id="prestige-section" class="card"></section>
+
+            </section>
+
+        </main> <!-- END main.layout -->
+    </div> <!-- END #app -->
+
+
+
+
+    <!-- ============================================================
+         JAVASCRIPT LOAD ORDER (VERY IMPORTANT)
+         Load State/Utils first, then static data, then systems,
+         then Leaderboard, then Render/UI, finally Main game loop.
+    =============================================================== -->
+
+    <!-- Core state + utilities -->
     <script src="js/state.js"></script>
     <script src="js/utils.js"></script>
 
-    <!-- 2) Data definitions -->
+    <!-- Static game data -->
     <script src="js/eggs.js"></script>
     <script src="js/animals.js"></script>
 
-    <!-- 3) Game systems (logic modules) -->
+    <!-- All game systems -->
     <script src="js/systems/hatching.js"></script>
     <script src="js/systems/feeding.js"></script>
     <script src="js/systems/cleaning.js"></script>
@@ -135,11 +140,15 @@
     <script src="js/systems/habitat.js"></script>
     <script src="js/systems/disease.js"></script>
     <script src="js/systems/prestige.js"></script>
+    <script src="js/systems/lose.js"></script>
 
-    <!-- 4) Rendering, leaderboard, UI bindings, and main loop -->
-    <script src="js/render.js"></script>
+    <!-- Leaderboard -->
     <script src="js/leaderboard.js"></script>
+
+    <!-- Rendering, UI wiring, and Main Loop -->
+    <script src="js/render.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/main.js"></script>
+
 </body>
 </html>
