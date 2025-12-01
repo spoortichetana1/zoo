@@ -44,7 +44,7 @@
         sections.topBar.innerHTML = `
             <div class="game-title">🦁 Fantasy Zoo</div>
             <div class="top-stats">
-                <div class="stat">Coins: ${coins}</div>
+                <div class="stat">Coins: <span class="coin-badge">${coins}</span></div>
                 <div class="stat">Income/sec: ${income}</div>
                 <div class="stat">Animals: ${animals} | Eggs: ${eggs}</div>
                 <div class="stat">Prestiges: ${prestiges}</div>
@@ -94,9 +94,10 @@
             keys.forEach((key) => {
                 const egg = eggs[key];
                 const btn = document.createElement("button");
-                btn.className = "egg-button";
+                btn.className = `egg-button egg-${key}`;
                 btn.setAttribute("data-action", "buy-egg");
                 btn.setAttribute("data-egg-type", key);
+                btn.setAttribute("aria-label", `Buy ${egg.name}`);
                 btn.innerHTML = `
                     <div style="font-size:1.6rem; margin-bottom:4px;">${egg.icon}</div>
                     <div style="font-weight:600;">${egg.name}</div>
@@ -182,7 +183,7 @@
             card.innerHTML = `
                 <div class="icon">${animal.emoji}</div>
                 <div><strong>${animal.name}</strong></div>
-                <div class="tag">${animal.rarity || "Unknown"}</div>
+                <div class="tag ${String((animal.rarity || "")).toLowerCase()}">${animal.rarity || "Unknown"}</div>
                 <div class="income-text">Base: ${animal.income} | Effective: ${formatNumber(effectiveIncome)}</div>
                 <div class="income-text">Happiness: ${happiness}% ${happiness <= 0 ? "😞" : happiness >= 80 ? "😄" : "🙂"}</div>
                 <div class="income-text">Health: ${health}</div>
@@ -195,10 +196,25 @@
                 <div class="clean-label">Cleanliness: ${cleanPercent}%</div>
                 <div class="progress-bar clean-bar"><div class="progress-inner" style="width:${cleanPercent}%;"></div></div>
                 <div class="button-row">
-                    <button class="card-button feed" data-action="feed" data-animal-id="${animal.id}">🍎 Feed</button>
-                    <button class="card-button clean" data-action="clean" data-animal-id="${animal.id}">🛁 Clean</button>
-                    <button class="card-button sell" data-action="sell" data-animal-id="${animal.id}">💸 Sell</button>
-                    <button class="card-button" data-action="send-to-clinic" data-animal-id="${animal.id}">🏥 Clinic</button>
+                    <button class="card-button feed" data-action="feed" data-animal-id="${animal.id}" tabindex="0" aria-label="Feed ${animal.name}">🍎 Feed</button>
+                    <button class="card-button clean" data-action="clean" data-animal-id="${animal.id}" aria-label="Clean ${animal.name}">🛁 Clean</button>
+                    <button class="card-button sell" data-action="sell" data-animal-id="${animal.id}" aria-label="Sell ${animal.name}">💸 Sell</button>
+                        ${animal.healthStatus === 'sick'
+                            ? (() => {
+                                const cost = DiseaseSystem.getClinicCostById ? DiseaseSystem.getClinicCostById(animal.id) : 0;
+                                return `<button class="card-button" data-action="send-to-clinic" data-animal-id="${animal.id}" aria-label="Send ${animal.name} to clinic">🏥 Clinic (${cost})</button>`;
+                            })()
+                            : (() => {
+                                const inQueue = Array.isArray(GameState.clinicQueue) && GameState.clinicQueue.some(id => String(id) === String(animal.id));
+                                const beingTreated = GameState.currentPatient && String(GameState.currentPatient.id) === String(animal.id);
+                                if (beingTreated) {
+                                    return `<button class="card-button disabled" aria-label="${animal.name} is being treated" disabled>🏥 In Treatment</button>`;
+                                } else if (inQueue) {
+                                    return `<span style="display:inline-flex; gap:6px; align-items:center;"><button class=\"card-button disabled\" aria-label=\"${animal.name} is in clinic queue\" disabled>🏥 In Queue</button><button class=\"card-button cancel\" data-action=\"cancel-clinic\" data-animal-id=\"${animal.id}\">✖</button></span>`;
+                                }
+                                return `<button class="card-button disabled" aria-label="${animal.name} not sick" disabled>🏥 Clinic</button>`;
+                            })()
+                        }
                 </div>
                 <div class="button-row">
                     ${ (window.HabitatConfig || []).map(h => `
@@ -251,14 +267,14 @@
             card.innerHTML = `
                 <div class="icon">${animal.emoji}</div>
                 <div><strong>${animal.name}</strong></div>
-                <div class="tag">${animal.rarity || "Unknown"}</div>
+                <div class="tag ${String((animal.rarity || "")).toLowerCase()}">${animal.rarity || "Unknown"}</div>
                 <div style="font-size:0.85rem;">${isCurrent ? "Getting cleaned" : `Waiting #${idx + 1}`}</div>
                 ${isCurrent ? `<div class="progress-bar clean-bar"><div class="progress-inner" style="width:${progressPercent}%;"></div></div>` : ""}
             `;
             list.appendChild(card);
         });
 
-        sections.bathHouse.appendChild(list);
+            sections.bathHouse.appendChild(list);
     }
 
     function renderClinic() {
@@ -278,6 +294,8 @@
                 <div class="card" style="margin-bottom:8px;">
                     <div><strong>Being treated:</strong> ${animal ? animal.name : "Unknown"}</div>
                     <div class="progress-bar"><div class="progress-inner" style="width:${progressPercent}%;"></div></div>
+                    <div style="margin-top:6px;">${animal ? `Cost: ${DiseaseSystem && DiseaseSystem.getClinicCostById ? DiseaseSystem.getClinicCostById(animal.id) : 0} 💰` : ''}</div>
+                    <div style="margin-top:8px;"><button class="card-button cancel" data-action="cancel-clinic" data-animal-id="${GameState.currentPatient.id}">✖ Stop Treatment</button></div>
                 </div>
             `;
         } else {
@@ -290,7 +308,8 @@
                 const animal = GameState.animals.find((a) => a.id === id);
                 const name = animal ? animal.name : "Unknown";
                 const li = document.createElement("li");
-                li.textContent = `Waiting: ${name}`;
+                const cost = (GameState.clinicQueueCosts && GameState.clinicQueueCosts[id]) || DiseaseSystem.getClinicCostById(id);
+                li.innerHTML = `Waiting: ${name} — Cost: ${cost} 💰 <button class="card-button cancel" data-action="cancel-clinic" data-animal-id="${id}">✖ Cancel</button>`;
                 queueList.appendChild(li);
             });
             wrapper.appendChild(queueList);
@@ -422,11 +441,11 @@
             ? PrestigeSystem.canPrestige()
             : false;
 
-        sections.prestige.innerHTML = `
+            sections.prestige.innerHTML = `
             <h2>Prestige</h2>
             <p>Total Prestiges: ${prestigeCount}</p>
             <p>Global Income Multiplier: x${multiplier}</p>
-            <button class="egg-button" data-action="prestige" ${!canPrestige || GameState.isGameOver ? "disabled" : ""}>
+            <button class="egg-button" data-action="prestige" aria-label="Prestige" ${!canPrestige || GameState.isGameOver ? "disabled" : ""}>
                 Prestige
             </button>
             ${!canPrestige ? `<p style="font-size:0.85rem; color:#555;">Need more coins/animals to prestige.</p>` : ""}

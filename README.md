@@ -1,3 +1,105 @@
+# 🐾 Fantasy Zoo — Idle Pet Management Game
+
+Fantasy Zoo is a modular, extendable browser game built using HTML, CSS, and JavaScript. You hatch eggs, manage animals' needs (hunger, cleanliness, happiness), and grow your zoo's income. The game is designed for easy expansion — add systems like habitats, disease, events, and prestige.
+
+---
+
+## Features
+
+- Buy eggs (Common / Rare / Mystic)
+- Incubate eggs and hatch animals with rarity and income values
+- Maintain animals: feed, clean, treat at clinic
+- Bath house (FIFO queue) — only one animal bathed at a time
+- Disease system with a clinic queue and automated treatments
+	- Clinic queue and treatment: sick animals can be queued for treatment; treatments have a cost and duration. Players can cancel queued treatments and receive a refund (clinic cost tracked per queue entry). Selling an animal cancels queued treatment and refunds its clinic cost.
+- Economy system: animals produce coins per second
+- Leaderboard: local storage-based run records
+- Prestige: reset run for permanent bonuses
+- Modular systems for easy future expansion (events, habitats, happiness)
+
+---
+
+## Gameplay overview
+
+Every tick (default 1 second):
+
+1. HatchingSystem checks eggs and hatches them into animal instances
+2. CleaningSystem advances baths and processes a queue
+3. DiseaseSystem checks animals for neglect → can make them sick
+4. DiseaseSystem processes clinic queue and treats animals
+5. HappinessSystem updates animal perks and computed effective incomes
+6. EconomySystem sums effective incomes and adds coins
+7. Render updates the UI
+
+Lose conditions are:
+
+- Bankrupt (coins < 0)
+- No animals & no eggs & cannot afford cheapest egg
+- All animals have happiness <= 0
+
+If any are true, the game shows a clear Game Over message with a Restart button.
+
+---
+
+## Folder structure
+
+```
+zoo/
+├── index.html        # Main HTML and script/cascade order
+├── README.md         # This document
+├── css/
+│   └── style.css     # All UI styling
+├── js/
+│   ├── state.js      # Global game state
+│   ├── utils.js      # Helpers (random, id, formatters)
+│   ├── eggs.js       # Egg definitions
+│   ├── animals.js    # Animal pools and templates
+│   ├── render.js     # DOM render updates for each panel
+│   ├── ui.js         # Event wiring, delegations, handlers
+│   ├── leaderboard.js# Local storage-based leaderboard helpers
+│   ├── main.js       # Game orchestrator and tick loop
+│   └── systems/      # Game logic modules
+│       ├── hatching.js
+│       ├── feeding.js
+│       ├── cleaning.js
+│       ├── economy.js
+│       ├── happiness.js
+│       ├── events.js
+│       ├── habitat.js
+│       ├── disease.js
+│       ├── prestige.js
+│       └── lose.js
+└── assets/
+    └── (optional images/icons)
+```
+
+---
+
+## How to run locally
+
+1. Open `index.html` in a current browser.
+2. Tip: Run a lightweight HTTP server if needed for consistent localStorage behavior:
+
+```powershell
+python -m http.server 8000
+# then open http://localhost:8000
+```
+
+---
+
+## Developer notes
+
+- The `main.js` file initializes modules and the tick loop. The UI and leaderboard initialize only once via `UI.init()` and `Leaderboard.init()`.
+- `GameState` is the single source of truth. All systems read and write into it.
+- If adding a system that depends on timing, ensure it runs inside `main.js`'s tick.
+
+If you want further features, such as a dark theme or improved progression, please open an issue or submit a PR.
+
+---
+
+## License
+
+Public domain sample demo (tweak and reuse as you like).
 Here’s a clean spec you can treat as the final requirements for Fantasy Zoo.
 
 ⸻

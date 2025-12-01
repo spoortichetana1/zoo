@@ -40,15 +40,28 @@
     box-sizing: border-box; /* Width/height include padding + border */
 }
 
+:root {
+    --bg-start: #fff7e6;
+    --bg-end: #ffe6fa;
+    --card-bg: #ffffff;
+    --muted: #555;
+    --accent: #c58fff;
+    --accent-2: #8fd6ff;
+    --success: #c9f7c4;
+    --danger: #ffb4a2;
+    --gold: #ffd580;
+    --soft-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+}
+
 html, body {
     height: 100%; /* Allows the background gradient to fill the entire viewport */
 }
 
 body {
     /* Soft gradient background to make the game feel playful */
-    background: linear-gradient(135deg, #fff7e6, #ffe6fa);
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    color: #333;
+    background: linear-gradient(135deg, var(--bg-start), var(--bg-end));
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    color: #222;
     /* Smooth text rendering on most browsers */
     -webkit-font-smoothing: antialiased;
 }
@@ -87,9 +100,9 @@ body {
 
 .game-container {
     /* Center the game layout in the middle of the page */
-    max-width: 1100px;
+    max-width: 1180px;
     margin: 0 auto;
-    padding: 16px;
+    padding: 20px;
 }
 
 /* 
@@ -104,13 +117,13 @@ body {
     justify-content: space-between;
     align-items: center;
 
-    background: #ffe3a3;       /* Warm orange-yellow background */
+    background: linear-gradient(90deg, rgba(255,230,160,0.95), rgba(255,245,230,0.5));
     border-radius: 12px;       /* Smooth rounded corners */
     padding: 12px 16px;
     margin-bottom: 16px;
 
     /* Light drop shadow for "card" effect */
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--soft-shadow);
 }
 
 /* Game title text ("Fantasy Zoo") */
@@ -133,7 +146,7 @@ body {
 /* Individual stat line (e.g. "Coins: 100") */
 .stat {
     font-size: 0.95rem;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 /* 
@@ -149,13 +162,15 @@ body {
     margin-bottom: 16px;
 
     /* Soft shadow to make panels stand out from background */
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--soft-shadow);
 }
 
 /* Section heading (e.g. "Egg Shop", "Incubator") */
-.panel h2 {
-    font-size: 1.2rem;
-    margin-bottom: 6px;
+.panel h2, .card h2 {
+    font-size: 1.14rem;
+    margin-bottom: 8px;
+    color: #2b2b2b;
+    font-weight: 700;
 }
 
 /* Short explanation text under each section title */
@@ -191,8 +206,13 @@ body {
     border: none;
     border-radius: 10px;
     padding: 10px;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
 
-    background: #f6f0ff;          /* Soft purple/lavender background */
+    background: linear-gradient(180deg, #fff, #f4ecff);
     color: #333;
     font-size: 0.95rem;
     font-weight: 600;
@@ -201,17 +221,19 @@ body {
     text-align: center;
 
     /* Slight shadow: makes button look clickable */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--soft-shadow);
 
     /* Smooth hover animations */
     transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
 }
 
+.egg-button .icon { font-size: 1.8rem; margin-bottom: 4px; }
+
 /* Hover state: lifts the button slightly */
 .egg-button:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.18);
-    background: #efe2ff;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
+    background: linear-gradient(180deg, #fff, #efe2ff);
 }
 
 /* Active (pressed) state: push back down */
@@ -219,6 +241,14 @@ body {
     transform: translateY(0);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
+
+/* Egg tier visuals: common / rare / mystic */
+.egg-button.egg-common { border: 1px solid rgba(10,10,10,0.03); background: linear-gradient(180deg, #fff, #f4fbff); }
+.egg-button.egg-rare { border: 1px solid rgba(10,10,10,0.04); background: linear-gradient(180deg, #fff, #eef6ff); }
+.egg-button.egg-mystic { border: 1px solid rgba(10,10,10,0.04); background: linear-gradient(180deg, #fff, #f7eefc); }
+
+/* Card hover: lift up and slightly increase shadow */
+.card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.09); }
 
 /* 
     =========================
@@ -256,13 +286,15 @@ body {
     If a visual issue affects all of these, you probably need to edit .card.
 */
 .card {
-    background: #fffdf5;       /* Slightly warm off-white */
+    background: linear-gradient(180deg, #fff, #fffdf9);       /* Slightly warm off-white */
     border-radius: 10px;
     padding: 8px 10px 10px 10px;
     text-align: center;
 
     /* Thin shadow for depth */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
 
     font-size: 0.9rem;
 }
@@ -272,22 +304,30 @@ body {
     If the emoji is too big or small, change font-size here.
 */
 .card .icon {
-    font-size: 2rem;
-    margin-bottom: 4px;
+    font-size: 2.4rem;
+    margin-bottom: 6px;
 }
 
 /*
     Small pill-shaped label (used for rarity tags like "Common", "Rare", etc.)
 */
+/* RARITY TAGS (applied via class names like .tag .rare or .tag.rare) */
 .tag {
     display: inline-block;
     margin-top: 4px;
     padding: 2px 6px;
     border-radius: 999px;      /* Fully rounded (pill shape) */
     font-size: 0.7rem;
-    background: #ffe9c7;       /* Soft orange background */
+    background: #f4f4f7;       /* Soft neutral background */
     color: #333;
+    text-transform: capitalize;
 }
+
+.tag.common { background: #f0f7ff; color: #08415c; }
+.tag.uncommon { background: #eaf9ef; color: #0b4d21; }
+.tag.rare { background: #eef6ff; color: #0b2b40; }
+.tag.epic { background: #f8edff; color: #3d0861; }
+.tag.legendary { background: #fff7e6; color: #5a3400; }
 
 /*
     Used to display coin income text like "💰 3 coins/sec".
@@ -377,7 +417,7 @@ body {
     flex-wrap: wrap;       /* Allow buttons to wrap on small widths */
     justify-content: center;
     gap: 6px;
-    margin-top: 8px;
+    margin-top: 12px;
 }
 
 /*
@@ -396,12 +436,12 @@ body {
 
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 
-    transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.1s ease;
+    transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.08s ease;
 }
 
 /* Hover effect for active card buttons */
 .card-button:hover {
-    transform: translateY(-1px);
+    transform: translateY(-2px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
@@ -409,6 +449,12 @@ body {
 .card-button:active {
     transform: translateY(0);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+/* Focus state for keyboard users */
+.card-button:focus {
+    outline: 3px solid rgba(197, 143, 255, 0.28);
+    outline-offset: 2px;
 }
 
 /* Specific color for Feed button */
@@ -424,6 +470,12 @@ body {
 /* Specific color for Sell button */
 .card-button.sell {
     background: #ffe0c4;  /* Soft orange */
+}
+
+/* Cancel/Stop buttons */
+.card-button.cancel {
+    background: #ffdfe0; /* light red */
+    color: #7b1d14;
 }
 
 /* Disabled state (used in JS by adding .disabled class) */
@@ -446,7 +498,7 @@ body {
     */
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 10px;
     margin-top: 8px;
 }
 
@@ -464,6 +516,19 @@ th, td {
     font-size: 0.9rem;
     text-align: left;
 }
+
+thead th {
+    background: linear-gradient(180deg, #fafafa, #fff);
+    font-weight: 700;
+    color: #222;
+}
+
+tbody tr:hover {
+    background: rgba(197, 143, 255, 0.04);
+}
+
+/* Helper to emphasize coin numbers */
+.coin-badge { font-weight: 800; color: #085b53; }
 
 /* 
     =========================
@@ -523,4 +588,9 @@ th, td {
     .layout {
         grid-template-columns: 1fr;
     }
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
 }

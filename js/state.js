@@ -59,6 +59,8 @@
         // Currently active clinic job (or null)
         // { id: <animalId>, start: <timestamp>, durationMs: <number> }
         currentPatient: null,
+        // clinicQueueCosts: mapping id -> clinic cost (used for refunds / UI)
+        clinicQueueCosts: {},
 
         // ---------------------------------------------------------------------
         // 4. HABITATS

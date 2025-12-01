@@ -319,6 +319,28 @@
             GS.currentBath = null;
         }
 
+        // Clean up clinic queue: refund if present in queue and remove
+        if (Array.isArray(GS.clinicQueue)) {
+            const qindex = GS.clinicQueue.findIndex(id => String(id) === idStr);
+            if (qindex !== -1) {
+                // refund cost if tracked
+                if (GS.clinicQueueCosts && GS.clinicQueueCosts[idStr]) {
+                    GS.coins += Number(GS.clinicQueueCosts[idStr]) || 0;
+                    delete GS.clinicQueueCosts[idStr];
+                }
+                GS.clinicQueue.splice(qindex, 1);
+            }
+        }
+
+        // If the animal is currently being treated, end treatment now
+        if (GS.currentPatient && String(GS.currentPatient.id) === idStr) {
+            GS.currentPatient = null;
+            if (GS.clinicQueueCosts && GS.clinicQueueCosts[idStr]) {
+                // If the animal being treated had a queued cost tracked (shouldn't), delete
+                delete GS.clinicQueueCosts[idStr];
+            }
+        }
+
         console.log(
             `EconomySystem: Sold '${animal.name}' for ${sellValue} coins. ` +
             `New balance: ${GS.coins}.`

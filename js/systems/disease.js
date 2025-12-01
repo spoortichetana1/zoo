@@ -130,6 +130,10 @@
         if (typeof GS.currentPatient === "undefined") {
             GS.currentPatient = null;
         }
+        // Map for tracking clinic cost per queued animal so we can refund on cancel/sell
+        if (!GS.clinicQueueCosts || typeof GS.clinicQueueCosts !== 'object') {
+            GS.clinicQueueCosts = {};
+        }
     }
 
     /*
@@ -142,6 +146,18 @@
         if (!GS || !Array.isArray(GS.animals)) return null;
         const idStr = String(animalId);
         return GS.animals.find(a => String(a.id) === idStr) || null;
+    }
+
+    /*
+        getClinicCostById(animalId)
+        ---------------------------
+        Helper: Calculate clinic cost for a given animal ID based on its income
+    */
+    function getClinicCostById(animalId) {
+        const animal = getAnimalById(animalId);
+        if (!animal) return 0;
+        const income = Number(animal.income) || 0;
+        return income * CLINIC_COST_MULTIPLIER;
     }
 
     // =========================================================================
@@ -273,6 +289,10 @@
                 start: now,
                 durationMs: CLINIC_DURATION_MS
             };
+            // Remove stored queue cost for this id since it's now being treated
+            if (GS.clinicQueueCosts && GS.clinicQueueCosts[nextId]) {
+                delete GS.clinicQueueCosts[nextId];
+            }
 
             const animal = getAnimalById(nextId);
             if (animal) {
@@ -329,6 +349,46 @@
                 GS.currentPatient = null;
             }
         }
+    }
+
+    /*
+        cancelClinicById(animalId)
+        ---------------------------
+        Allows player to cancel a queued clinic request before treatment.
+        - If animal is in clinicQueue: remove it and refund the clinic cost.
+        - If animal is the currentPatient: we don't refund, but allow early stop
+          by marking _currentPatient = null and restoring 'sick' status.
+        Returns true on success, false otherwise.
+    */
+    function cancelClinicById(animalId) {
+        if (!GS) return false;
+        ensureClinicState();
+        const idStr = String(animalId);
+
+        // If animal is the current patient, clear treatment and leave them sick.
+        if (GS.currentPatient && String(GS.currentPatient.id) === idStr) {
+            GS.currentPatient = null;
+            const animal = getAnimalById(idStr);
+            if (animal) {
+                animal.healthStatus = 'sick';
+            }
+            return true;
+        }
+
+        // Otherwise, check the queue and remove if present.
+        const index = GS.clinicQueue.findIndex(id => String(id) === idStr);
+        if (index !== -1) {
+            GS.clinicQueue.splice(index, 1);
+            // Refund clinic cost if we tracked it
+            if (GS.clinicQueueCosts && GS.clinicQueueCosts[idStr]) {
+                const refund = Number(GS.clinicQueueCosts[idStr]) || 0;
+                GS.coins += refund;
+                delete GS.clinicQueueCosts[idStr];
+            }
+            return true;
+        }
+
+        return false;
     }
 
     // =========================================================================
@@ -406,8 +466,12 @@
             GS.coins -= clinicCost;
         }
 
-        // Add to clinic queue
+        // Add to clinic queue & record the cost for a possible refund
         GS.clinicQueue.push(animal.id);
+        if (!GS.clinicQueueCosts || typeof GS.clinicQueueCosts !== 'object') {
+            GS.clinicQueueCosts = {};
+        }
+        GS.clinicQueueCosts[animal.id] = clinicCost;
 
         console.log(
             `DiseaseSystem: '${animal.name}' added to clinic queue (cost = ${clinicCost}, ` +
@@ -446,6 +510,8 @@
     */
     window.DiseaseSystem = {
         tick,
-        sendToClinicById
+        sendToClinicById,
+        getClinicCostById,
+        cancelClinicById
     };
 })();

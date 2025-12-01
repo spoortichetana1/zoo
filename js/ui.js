@@ -1,4 +1,5 @@
 /* 
+
     =============================================================================
     FANTASY ZOO - UI WIRING (js/ui.js)
     =============================================================================
@@ -52,11 +53,15 @@
         All event listeners are registered once by calling UI.init().
         main.js will call UI.init() once DOMContentLoaded is confirmed.
     */
+    let _initialized = false;
     function init() {
+        if (_initialized) return;
+        _initialized = true;
         setupEggShopHandlers();
         setupZooHandlers();
         setupPrestigeHandlers();
         setupGameOverHandlers();
+        setupClinicHandlers();
     }
 
     // =========================================================================
@@ -173,6 +178,9 @@
             } else if (action === "send-to-clinic") {
                 if (!animalId) return;
                 handleSendToClinic(animalId);
+            } else if (action === "cancel-clinic") {
+                if (!animalId) return;
+                handleCancelClinic(animalId);
             } else if (action === "assign-habitat") {
                 if (!animalId) return;
                 const habitatKey = btn.getAttribute("data-habitat-key");
@@ -324,6 +332,36 @@
                 console.warn("UI: Prestige failed →", result.reason);
             }
         });
+    }
+
+    // =========================================================================
+    // CLINIC HANDLERS (CANCEL IN QUEUE / STOP TREATMENT)
+    // =========================================================================
+    function setupClinicHandlers() {
+        const elClinic = $("clinic-section");
+        if (!elClinic) return;
+
+        elClinic.addEventListener("click", (event) => {
+            const btn = event.target.closest("[data-action='cancel-clinic']");
+            if (!btn) return;
+
+            const animalId = btn.getAttribute("data-animal-id");
+            if (!animalId) return;
+
+            handleCancelClinic(animalId);
+        });
+    }
+
+    function handleCancelClinic(animalId) {
+        if (!window.DiseaseSystem || typeof DiseaseSystem.cancelClinicById !== "function") {
+            console.warn("UI: DiseaseSystem.cancelClinicById(id) not defined.");
+            return;
+        }
+
+        const success = DiseaseSystem.cancelClinicById(animalId);
+        if (success) {
+            Render.all();
+        }
     }
 
     // =========================================================================
